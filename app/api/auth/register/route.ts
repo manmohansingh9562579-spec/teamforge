@@ -34,6 +34,7 @@ export async function POST(req: Request) {
       201
     );
   } catch (err) {
+    console.error("REGISTER ERROR:", err);
     return handleApiError(err);
   }
 }
