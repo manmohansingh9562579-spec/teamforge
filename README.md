@@ -44,6 +44,7 @@ needed to actually ship the project, not just find the team.
 - **Deterministic skill matching** — a 0–100 compatibility score with the concrete
   reasons behind it. No AI, no black box.
 - **Join requests** — send, accept, reject, cancel, with duplicate-request prevention.
+- **Developer connections** — send a private contact request with an optional note, accept or decline incoming requests, and manage your network without exposing email addresses.
 - **Notifications** — join requests, acceptances, rejections, membership changes, task
   assignments, task status changes.
 - **Team workspace** — Overview (real computed progress), Kanban task board, Members
@@ -76,9 +77,9 @@ needed to actually ship the project, not just find the team.
 
 ```
 app/
-  api/                 Route handlers (auth, profile, teams, tasks, requests, notifications, account)
+  api/                 Route handlers (auth, profile, teams, tasks, requests, contact, notifications, account)
   (public pages)        /, /about, /discover, /teams, /developers/[username], /teams/[slug], /signin, /signup
-  (authenticated pages)  /dashboard, /profile, /profile/edit, /my-teams, /teams/create,
+  (authenticated pages)  /dashboard, /profile, /profile/edit, /my-teams, /connections, /teams/create,
                          /teams/[slug]/{manage,workspace,tasks,members,activity,settings},
                          /requests, /notifications, /settings, /onboarding
 components/
@@ -93,7 +94,7 @@ components/
   workspace/           WorkspaceNav, KanbanBoard, TaskCard, MembersList, TeamSettingsForm
 lib/                   db.ts, auth.ts, session.ts, api.ts, notify.ts, teamAccess.ts,
                        constants.ts, utils.ts
-models/                User, Team, Request (JoinRequest), Notification, Task, Activity
+models/                User, Team, Request (JoinRequest), ContactRequest, Notification, Task, Activity
 services/              matchingService.ts, profileService.ts, teamService.ts,
                        teamHelpers.ts (pure, client-safe logic split out from teamService)
 validations/           Zod schemas: auth, team, task
@@ -131,6 +132,7 @@ before acting.
   cancelled), timestamps. A partial unique index on `{senderId, teamId}` where
   `status: "pending"` prevents duplicate pending requests at the database level, not
   just in application code.
+- **ContactRequest** — senderId, recipientId, optional message, status, timestamps. A canonical participant-pair key and partial unique index prevent duplicate pending requests in either direction.
 - **Notification** — userId, type, message, relatedEntity `{kind, id}`, isRead,
   createdAt. Compound index on `{userId, isRead, createdAt}`.
 - **Task** — teamId, title, description, status (To Do/In Progress/Review/Done),
@@ -269,6 +271,7 @@ Specifically checked during development:
 - **Duplicate prevention** — a partial unique database index (not just application
   logic) prevents duplicate pending join requests; a `pre('save')` hook rejects
   duplicate team memberships.
+- **Contact privacy** — public developer and contact APIs return an explicit profile-field allowlist. Contact request ownership is re-derived from the authenticated session, and private email fields are never returned.
 
 This review was done by the same engineer who wrote the code, in the same session — it
 is not a substitute for an independent security audit before handling real user data

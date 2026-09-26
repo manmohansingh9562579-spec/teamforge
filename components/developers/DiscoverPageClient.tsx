@@ -10,9 +10,11 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { DeveloperCardSkeleton } from "@/components/ui/Skeleton";
 import { DeveloperCard, type DeveloperCardData } from "@/components/developers/DeveloperCard";
-import { ROLES, EXPERIENCE_LEVELS, AVAILABILITY, INTERESTS } from "@/lib/constants";
+import { ROLES, EXPERIENCE_LEVELS, AVAILABILITY, INTERESTS, SUGGESTED_SKILLS } from "@/lib/constants";
+import { Button } from "@/components/ui/Button";
 
 const filterDefs: FilterDef[] = [
+  { key: "skill", label: "Any skill", options: SUGGESTED_SKILLS },
   { key: "role", label: "Any role", options: ROLES },
   { key: "experience", label: "Any experience", options: EXPERIENCE_LEVELS },
   { key: "availability", label: "Any availability", options: AVAILABILITY },
@@ -27,10 +29,13 @@ export function DiscoverPageClient() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   const q = searchParams.get("q") ?? "";
-  const page = Number(searchParams.get("page") ?? 1);
+  const requestedPage = Number(searchParams.get("page") ?? 1);
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const values = {
+    skill: searchParams.get("skill") ?? "",
     role: searchParams.get("role") ?? "",
     experience: searchParams.get("experience") ?? "",
     availability: searchParams.get("availability") ?? "",
@@ -43,7 +48,8 @@ export function DiscoverPageClient() {
       if (value) params.set(key, value);
       else params.delete(key);
       if (key !== "page") params.delete("page");
-      router.push(`/discover?${params.toString()}`);
+      const query = params.toString();
+      router.push(query ? `/discover?${query}` : "/discover");
     },
     [router, searchParams]
   );
@@ -55,6 +61,7 @@ export function DiscoverPageClient() {
 
     const params = new URLSearchParams();
     if (q) params.set("q", q);
+    if (values.skill) params.set("skill", values.skill);
     if (values.role) params.set("role", values.role);
     if (values.experience) params.set("experience", values.experience);
     if (values.availability) params.set("availability", values.availability);
@@ -62,9 +69,9 @@ export function DiscoverPageClient() {
     params.set("page", String(page));
 
     fetch(`/api/developers?${params.toString()}`)
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
+      .then((response) => {
+        if (!response.ok) throw new Error("Could not load developers");
+        return response.json();
       })
       .then((json) => {
         if (cancelled) return;
@@ -77,53 +84,54 @@ export function DiscoverPageClient() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, values.role, values.experience, values.availability, values.interest, page]);
+  }, [q, values.skill, values.role, values.experience, values.availability, values.interest, page, retryKey]);
 
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SearchBar
           value={q}
-          onChange={(v) => setParam("q", v)}
-          placeholder="Search by name, skill or role..."
-          className="sm:max-w-[320px]"
+          onChange={(value) => setParam("q", value)}
+          placeholder="Search names, skills or roles"
+          className="sm:max-w-[360px]"
         />
-        <FilterPanel filters={filterDefs} values={values} onChange={setParam} />
+        <FilterPanel
+          filters={filterDefs}
+          values={values}
+          onChange={setParam}
+          onClear={() => router.push("/discover")}
+        />
       </div>
 
       {!error && developers !== null && (
-        <p className="mt-4 text-[13px] text-muted">
+        <p aria-live="polite" className="mt-5 text-sm text-muted">
           {total} developer{total === 1 ? "" : "s"} found
         </p>
       )}
 
-      <div className="mt-4">
+      <div className="mt-5">
         {error ? (
-          <ErrorState onRetry={() => setParam("page", String(page))} />
+          <ErrorState onRetry={() => setRetryKey((value) => value + 1)} />
         ) : developers === null ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <DeveloperCardSkeleton key={i} />
-            ))}
+          <div aria-label="Loading developers" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => <DeveloperCardSkeleton key={index} />)}
           </div>
         ) : developers.length === 0 ? (
           <EmptyState
             icon={Users}
             title="No developers found"
-            description="Try adjusting your search or filters to find more people."
+            description="Try another name or skill, or clear the filters to see everyone."
+            action={<Button variant="secondary" onClick={() => router.push("/discover")}>Clear search and filters</Button>}
           />
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {developers.map((dev) => (
-                <DeveloperCard key={dev.username} dev={dev} />
-              ))}
+              {developers.map((developer) => <DeveloperCard key={developer.username} dev={developer} />)}
             </div>
             <Pagination
               page={page}
               totalPages={totalPages}
-              onChange={(p) => setParam("page", String(p))}
+              onChange={(nextPage) => setParam("page", String(nextPage))}
             />
           </>
         )}

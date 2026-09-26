@@ -12,7 +12,7 @@ export default async function CreateTeamPage() {
       <div className="container-page max-w-[720px] py-10">
         <h1 className="text-xl font-semibold tracking-tight text-text">Create a team</h1>
         <p className="mt-1 text-sm text-muted">
-          Describe your project and what kind of teammates you're looking for.
+          Describe your project and what kind of teammates you&apos;re looking for.
         </p>
         <div className="mt-8">
           <CreateTeamForm />

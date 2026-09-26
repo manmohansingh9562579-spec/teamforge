@@ -14,10 +14,12 @@ export function FilterPanel({
   filters,
   values,
   onChange,
+  onClear,
 }: {
   filters: FilterDef[];
   values: Record<string, string>;
   onChange: (key: string, value: string) => void;
+  onClear?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const activeCount = Object.values(values).filter(Boolean).length;
@@ -28,6 +30,7 @@ export function FilterPanel({
         variant="secondary"
         size="sm"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
         className="sm:hidden"
       >
         <SlidersHorizontal className="h-3.5 w-3.5" />
@@ -38,9 +41,10 @@ export function FilterPanel({
         {filters.map((f) => (
           <select
             key={f.key}
+            aria-label={`Filter by ${f.label.replace(/^Any /, "").toLowerCase()}`}
             value={values[f.key] ?? ""}
             onChange={(e) => onChange(f.key, e.target.value)}
-            className="h-9 rounded-md border border-border bg-surface px-2.5 text-[13px] text-text focus:border-accent focus:outline-none"
+            className="h-10 rounded-lg border border-border bg-surface px-3 text-[13px] text-text focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
           >
             <option value="">{f.label}</option>
             {f.options.map((o) => (
@@ -52,8 +56,8 @@ export function FilterPanel({
         ))}
         {activeCount > 0 && (
           <button
-            onClick={() => filters.forEach((f) => onChange(f.key, ""))}
-            className="flex items-center gap-1 rounded-md px-2 text-[13px] text-muted hover:text-text"
+            onClick={() => onClear ? onClear() : filters.forEach((f) => onChange(f.key, ""))}
+            className="flex min-h-10 items-center gap-1 rounded-lg px-2 text-[13px] text-muted hover:text-text"
           >
             <X className="h-3.5 w-3.5" /> Clear
           </button>

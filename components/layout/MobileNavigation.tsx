@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Search, Users, FolderKanban, Bell } from "lucide-react";
+import { LayoutDashboard, Search, Users, FolderKanban, Bell, Network } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -10,6 +10,7 @@ const links = [
   { href: "/discover", label: "Discover", icon: Search },
   { href: "/teams", label: "Teams", icon: Users },
   { href: "/my-teams", label: "My teams", icon: FolderKanban },
+  { href: "/connections", label: "Connect", icon: Network },
   { href: "/notifications", label: "Alerts", icon: Bell },
 ];
 
@@ -17,7 +18,7 @@ export function MobileNavigation({ unreadCount = 0 }: { unreadCount?: number }) 
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 backdrop-blur-md md:hidden">
+    <nav aria-label="Primary navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 backdrop-blur-md md:hidden">
       <div className="flex h-16 items-center justify-around px-2 pb-[env(safe-area-inset-bottom)]">
         {links.map((l) => {
           const active = pathname === l.href || pathname?.startsWith(l.href + "/");
@@ -25,6 +26,7 @@ export function MobileNavigation({ unreadCount = 0 }: { unreadCount?: number }) 
             <Link
               key={l.href}
               href={l.href}
+              aria-current={active ? "page" : undefined}
               className={cn(
                 "relative flex flex-1 flex-col items-center gap-1 py-1.5 text-[10px] font-medium",
                 active ? "text-accent" : "text-muted"

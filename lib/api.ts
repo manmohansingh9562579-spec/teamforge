@@ -18,6 +18,10 @@ export function handleApiError(err: unknown) {
     return apiError("Invalid input", 400, err.flatten().fieldErrors);
   }
 
+  if (err instanceof SyntaxError) {
+    return apiError("Invalid JSON body", 400);
+  }
+
   if (err && typeof err === "object" && "code" in err && (err as any).code === 11000) {
     const field = Object.keys((err as any).keyPattern ?? { field: 1 })[0];
     return apiError(`This ${field} is already taken`, 409);

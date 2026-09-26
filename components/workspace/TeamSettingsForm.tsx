@@ -203,7 +203,7 @@ export function TeamSettingsForm({ team }: { team: ITeam }) {
       <div className="rounded-lg border border-danger/30 bg-danger/5 p-4">
         <h3 className="text-[13px] font-medium text-text">Delete this team</h3>
         <p className="mt-1 text-[12px] text-muted">
-          Permanently deletes the team, its tasks, requests and activity. This can't be undone.
+          Permanently deletes the team, its tasks, requests and activity. This can&apos;t be undone.
         </p>
         <Button variant="danger" size="sm" className="mt-3" onClick={() => setDeleteOpen(true)}>
           <Trash2 className="h-3.5 w-3.5" /> Delete team

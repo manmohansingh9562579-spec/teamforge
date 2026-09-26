@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-const sizes = { sm: 28, md: 36, lg: 48, xl: 72 };
+const sizes = { sm: 28, md: 36, lg: 48, xl: 72, xxl: 96 };
 
 export function Avatar({
   src,

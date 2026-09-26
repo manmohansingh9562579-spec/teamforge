@@ -53,6 +53,7 @@ export const TEAM_STATUS = ["forming", "active", "completed", "closed"] as const
 export const TEAM_VISIBILITY = ["public", "private"] as const;
 
 export const REQUEST_STATUS = ["pending", "accepted", "rejected", "cancelled"] as const;
+export const CONTACT_REQUEST_STATUS = ["pending", "accepted", "rejected", "cancelled"] as const;
 
 export const TASK_STATUS = ["To Do", "In Progress", "Review", "Done"] as const;
 export const TASK_PRIORITY = ["Low", "Medium", "High"] as const;
@@ -61,6 +62,9 @@ export const NOTIFICATION_TYPES = [
   "join_request",
   "request_accepted",
   "request_rejected",
+  "contact_request",
+  "contact_accepted",
+  "contact_rejected",
   "team_invitation",
   "member_joined",
   "member_removed",

@@ -30,6 +30,7 @@ export const config = {
     "/teams/:slug/settings/:path*",
     "/my-teams/:path*",
     "/requests/:path*",
+    "/connections/:path*",
     "/notifications/:path*",
     "/settings/:path*",
   ],

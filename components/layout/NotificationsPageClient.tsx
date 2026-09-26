@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { Bell, CheckCheck } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -14,6 +15,7 @@ interface NotificationItem {
   message: string;
   isRead: boolean;
   createdAt: string;
+  relatedEntity?: { kind: string; id: string };
 }
 
 function timeAgo(iso: string) {
@@ -74,7 +76,7 @@ export function NotificationsPageClient() {
       <EmptyState
         icon={Bell}
         title="No notifications yet"
-        description="You'll see updates here when something happens on your teams."
+        description="You’ll see updates about your teams and developer connections here."
       />
     );
   }
@@ -91,22 +93,45 @@ export function NotificationsPageClient() {
         </div>
       )}
       <div className="space-y-1">
-        {items.map((n) => (
-          <button
-            key={n._id}
-            onClick={() => !n.isRead && markRead(n._id)}
-            className={cn(
-              "flex w-full items-start gap-3 rounded-md p-3 text-left transition-colors hover:bg-surface-hover",
-              !n.isRead && "bg-accent-soft/40"
-            )}
-          >
-            {!n.isRead && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />}
-            <div className={cn("flex-1", n.isRead && "pl-5")}>
-              <p className="text-[13px] text-text">{n.message}</p>
-              <p className="mt-0.5 text-[12px] text-muted">{timeAgo(n.createdAt)}</p>
-            </div>
-          </button>
-        ))}
+        {items.map((notification) => {
+          const className = cn(
+            "flex w-full items-start gap-3 rounded-lg p-4 text-left transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50",
+            !notification.isRead && "bg-accent-soft/40"
+          );
+          const content = (
+            <>
+              {!notification.isRead && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />}
+              <div className={cn("flex-1", notification.isRead && "pl-5")}>
+                <p className="text-sm text-text">{notification.message}</p>
+                <p className="mt-1 text-xs text-muted">{timeAgo(notification.createdAt)}</p>
+              </div>
+            </>
+          );
+
+          if (notification.relatedEntity?.kind === "contact") {
+            return (
+              <Link
+                key={notification._id}
+                href="/connections"
+                onClick={() => !notification.isRead && markRead(notification._id)}
+                className={className}
+              >
+                {content}
+              </Link>
+            );
+          }
+
+          return (
+            <button
+              key={notification._id}
+              type="button"
+              onClick={() => !notification.isRead && markRead(notification._id)}
+              className={className}
+            >
+              {content}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

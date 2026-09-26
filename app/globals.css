@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  color-scheme: light;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Text", Helvetica, Arial,
     sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas,
@@ -25,6 +26,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --bg: 224 20% 7%;
   --surface: 224 18% 10%;
   --surface-hover: 224 16% 13%;
@@ -53,6 +55,7 @@ html {
 body {
   background-color: hsl(var(--bg));
   color: hsl(var(--text));
+  min-height: 100vh;
 }
 
 @media (prefers-reduced-motion: reduce) {

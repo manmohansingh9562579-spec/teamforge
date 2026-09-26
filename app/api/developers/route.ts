@@ -9,16 +9,25 @@ export async function GET(req: Request) {
     await connectDB();
     const { searchParams } = new URL(req.url);
 
-    const q = searchParams.get("q")?.trim();
+    const q = searchParams.get("q")?.trim().slice(0, 80);
     const skill = searchParams.get("skill");
     const role = searchParams.get("role");
     const experience = searchParams.get("experience");
     const availability = searchParams.get("availability");
     const interest = searchParams.get("interest");
-    const page = Math.max(1, Number(searchParams.get("page") ?? 1));
+    const requestedPage = Number(searchParams.get("page") ?? 1);
+    const page = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 100000) : 1;
 
     const filter: Record<string, unknown> = {};
-    if (q) filter.$text = { $search: q };
+    if (q) {
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      filter.$or = [
+        { $text: { $search: q } },
+        { username: { $regex: escaped, $options: "i" } },
+        { skills: { $regex: escaped, $options: "i" } },
+        { preferredRoles: { $regex: escaped, $options: "i" } },
+      ];
+    }
     if (skill) filter.skills = skill;
     if (role) filter.preferredRoles = role;
     if (experience) filter.experienceLevel = experience;

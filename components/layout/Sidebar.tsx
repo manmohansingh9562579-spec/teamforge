@@ -9,6 +9,7 @@ import {
   FolderKanban,
   Inbox,
   Bell,
+  Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ const links = [
   { href: "/teams", label: "Teams", icon: Users },
   { href: "/my-teams", label: "My teams", icon: FolderKanban },
   { href: "/requests", label: "Requests", icon: Inbox },
+  { href: "/connections", label: "Connections", icon: Network },
   { href: "/notifications", label: "Notifications", icon: Bell },
 ];
 
@@ -26,13 +28,14 @@ export function Sidebar({ unreadCount = 0 }: { unreadCount?: number }) {
 
   return (
     <aside className="hidden w-56 shrink-0 border-r border-border md:block">
-      <nav className="sticky top-16 flex flex-col gap-0.5 p-3">
+      <nav aria-label="Workspace navigation" className="sticky top-16 flex flex-col gap-0.5 p-3">
         {links.map((l) => {
           const active = pathname === l.href || pathname?.startsWith(l.href + "/");
           return (
             <Link
               key={l.href}
               href={l.href}
+              aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center justify-between rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
                 active

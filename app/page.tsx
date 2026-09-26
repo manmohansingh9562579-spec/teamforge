@@ -4,6 +4,7 @@ import {
   Search,
   Sparkles,
   UserPlus,
+  UsersRound,
   KanbanSquare,
   Bell,
   Activity,
@@ -44,10 +45,11 @@ const features = [
   { icon: Users, title: "Developer profiles", body: "A focused profile built around skills, roles and interests — not vanity metrics." },
   { icon: Search, title: "Team discovery", body: "Browse open teams filtered by required skills, tech stack and deadline." },
   { icon: Sparkles, title: "Skill matching", body: "A transparent, deterministic compatibility score with the reasons behind it." },
+  { icon: UsersRound, title: "Direct connections", body: "Reach out with a short note. Your private email stays private until you choose to share it." },
   { icon: UserPlus, title: "Join requests", body: "Send a request with a message. Owners accept or decline with one click." },
   { icon: LayoutGrid, title: "Project workspace", body: "A shared space for every team, with members, tasks and activity in one place." },
   { icon: KanbanSquare, title: "Task tracking", body: "A Kanban board with priorities, assignees and due dates." },
-  { icon: Bell, title: "Notifications", body: "Know the moment someone requests to join or a task gets assigned to you." },
+  { icon: Bell, title: "Notifications", body: "Know when someone wants to connect, join your team, or help move a task forward." },
   { icon: Activity, title: "Activity timeline", body: "A running record of what changed on your team, and who changed it." },
 ];
 
@@ -58,26 +60,27 @@ export default function HomePage() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="container-page pt-14 pb-16 sm:pt-20 sm:pb-24">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
+        <section className="container-page pt-12 pb-16 sm:pt-20 sm:pb-24">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_1fr] lg:gap-14">
             <div>
-              <h1 className="text-[2.5rem] font-semibold leading-[1.1] tracking-tight text-text sm:text-5xl">
+              <p className="mb-5 text-xs font-semibold uppercase tracking-[0.16em] text-accent">A place for people who build</p>
+              <h1 className="max-w-[14ch] text-[2.65rem] font-semibold leading-[1.04] tracking-[-0.045em] text-text sm:text-[4.25rem]">
                 Find people. Build teams. Ship projects.
               </h1>
-              <p className="mt-5 max-w-[46ch] text-[17px] leading-relaxed text-muted">
+              <p className="mt-6 max-w-[46ch] text-[17px] leading-8 text-muted sm:text-lg">
                 Discover developers, designers and builders for your next hackathon,
                 college project or side project — matched by skill, not luck.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
                   href="/discover"
-                  className="inline-flex h-11 items-center justify-center rounded-md bg-accent px-5 text-[14px] font-medium text-on-accent transition-colors hover:bg-accent-hover"
+                  className="inline-flex h-12 items-center justify-center rounded-lg bg-accent px-5 text-sm font-medium text-on-accent shadow-card transition-[background-color,transform] hover:bg-accent-hover active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2"
                 >
                   Find teammates
                 </Link>
                 <Link
                   href="/teams/create"
-                  className="inline-flex h-11 items-center justify-center rounded-md border border-border-strong px-5 text-[14px] font-medium text-text transition-colors hover:bg-surface-hover"
+                  className="inline-flex h-12 items-center justify-center rounded-lg border border-border-strong bg-surface px-5 text-sm font-medium text-text transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2"
                 >
                   Create a team
                 </Link>
@@ -128,7 +131,7 @@ export default function HomePage() {
             <h2 className="text-2xl font-semibold tracking-tight text-text sm:text-[28px]">
               Everything a project team actually needs
             </h2>
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {features.map((f) => (
                 <Card key={f.title} className="p-5">
                   <f.icon className="h-5 w-5 text-accent" strokeWidth={1.75} />
@@ -142,7 +145,7 @@ export default function HomePage() {
 
         {/* CTA */}
         <section className="container-page py-16 sm:py-20">
-          <div className="flex flex-col items-start justify-between gap-6 rounded-xl border border-border bg-surface p-8 sm:flex-row sm:items-center sm:p-10">
+          <div className="flex flex-col items-start justify-between gap-6 rounded-2xl border border-border bg-surface p-7 shadow-card sm:flex-row sm:items-center sm:p-10">
             <div>
               <h2 className="text-xl font-semibold tracking-tight text-text sm:text-2xl">
                 Your next project needs one more person
@@ -153,7 +156,7 @@ export default function HomePage() {
             </div>
             <Link
               href="/signup"
-              className="inline-flex h-11 shrink-0 items-center justify-center rounded-md bg-accent px-6 text-[14px] font-medium text-on-accent transition-colors hover:bg-accent-hover"
+              className="inline-flex h-12 shrink-0 items-center justify-center rounded-lg bg-accent px-6 text-sm font-medium text-on-accent transition-[background-color,transform] hover:bg-accent-hover active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2"
             >
               Get started
             </Link>

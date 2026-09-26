@@ -46,7 +46,7 @@ export function SettingsPageClient({ name, email }: { name: string; email: strin
                 <h3 className="text-[13px] font-medium text-text">Delete account</h3>
                 <p className="mt-1 text-[12px] text-muted">
                   Permanently deletes your account, teams you own, and your membership in
-                  other teams. This can't be undone.
+                  other teams. This can&apos;t be undone.
                 </p>
                 <Button
                   variant="danger"
@@ -112,11 +112,11 @@ export function SettingsPageClient({ name, email }: { name: string; email: strin
           return (
             <div className="max-w-[480px] space-y-3 text-[13px] text-muted">
               <p>
-                You're notified about join requests, request responses, team membership
-                changes, and task assignments as they happen.
+                You&apos;re notified about join requests, contact requests and responses, team
+                membership changes, and task assignments as they happen.
               </p>
               <p>
-                Manage what you've already received on the{" "}
+                Manage what you&apos;ve already received on the{" "}
                 <a href="/notifications" className="text-accent hover:underline">
                   notifications page
                 </a>

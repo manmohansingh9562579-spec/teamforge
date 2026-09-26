@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -19,18 +19,56 @@ export function Dialog({
   children?: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const titleId = useId();
+  const descriptionId = useId();
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusable = () =>
+      ref.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ) ?? [];
+    const firstFocusable = focusable()[0];
+    (firstFocusable ?? ref.current)?.focus();
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      const elements = focusable();
+      if (elements.length === 0) {
+        e.preventDefault();
+        ref.current?.focus();
+        return;
+      }
+
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
-    ref.current?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      previousFocus?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (typeof document === "undefined") return null;
 
@@ -51,7 +89,8 @@ export function Dialog({
             ref={ref}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="dialog-title"
+            aria-labelledby={titleId}
+            aria-describedby={description ? descriptionId : undefined}
             tabIndex={-1}
             initial={{ opacity: 0, y: 8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -60,7 +99,7 @@ export function Dialog({
             className="relative w-full max-w-[440px] rounded-lg border border-border bg-surface p-6 shadow-raised focus:outline-none"
           >
             <div className="flex items-start justify-between">
-              <h2 id="dialog-title" className="text-[15px] font-semibold text-text">
+              <h2 id={titleId} className="text-lg font-semibold tracking-tight text-text">
                 {title}
               </h2>
               <button
@@ -71,7 +110,7 @@ export function Dialog({
                 <X className="h-4 w-4" />
               </button>
             </div>
-            {description && <p className="mt-1.5 text-[13px] text-muted">{description}</p>}
+            {description && <p id={descriptionId} className="mt-1.5 text-sm leading-relaxed text-muted">{description}</p>}
             {children && <div className="mt-4">{children}</div>}
           </motion.div>
         </div>
