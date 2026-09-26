@@ -31,6 +31,7 @@ export const config = {
     "/my-teams/:path*",
     "/requests/:path*",
     "/connections/:path*",
+    "/messages/:path*",
     "/notifications/:path*",
     "/settings/:path*",
   ],

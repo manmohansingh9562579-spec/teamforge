@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Github, Linkedin, Globe, MapPin, GraduationCap, Pencil, BriefcaseBusiness, Sparkles } from "lucide-react";
+import { Github, Linkedin, Globe, MapPin, GraduationCap, Pencil, BriefcaseBusiness, Sparkles, MessageCircle } from "lucide-react";
 import { Types } from "mongoose";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge, SkillBadge } from "@/components/ui/Badge";
@@ -69,7 +69,7 @@ export function ProfileView({
               )}
             </div>
           </div>
-          <div className="shrink-0 sm:pt-5">
+          <div className="flex shrink-0 flex-col gap-2 sm:pt-5">
             {isOwner ? (
               <Link
                 href="/profile/edit"
@@ -78,7 +78,15 @@ export function ProfileView({
                 <Pencil className="h-4 w-4" /> Edit profile
               </Link>
             ) : (
-              <ContactButton recipientId={String(user._id)} recipientName={user.name} />
+              <>
+                <ContactButton recipientId={String(user._id)} recipientName={user.name} />
+                <Link
+                  href={`/messages/${user._id}`}
+                  className="inline-flex h-10 min-w-36 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 text-sm font-medium text-text transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg active:scale-[0.98]"
+                >
+                  <MessageCircle className="h-4 w-4" aria-hidden="true" /> Message
+                </Link>
+              </>
             )}
           </div>
         </div>
