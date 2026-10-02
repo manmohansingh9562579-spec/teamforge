@@ -10,12 +10,14 @@ import {
   Inbox,
   Bell,
   Network,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/discover", label: "Discover", icon: Search },
+  { href: "/team-match", label: "TeamForge Match", icon: Sparkles },
   { href: "/teams", label: "Teams", icon: Users },
   { href: "/my-teams", label: "My teams", icon: FolderKanban },
   { href: "/requests", label: "Requests", icon: Inbox },

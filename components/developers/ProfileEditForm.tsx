@@ -42,7 +42,7 @@ function toFormState(user: IUser): FormState {
     college: user.college ?? "",
     graduationYear: user.graduationYear ? String(user.graduationYear) : "",
     experienceLevel: user.experienceLevel ?? "",
-    availability: user.availability ?? "Available",
+    availability: user.availabilityConfirmed ? user.availability ?? "" : "",
     skills: user.skills ?? [],
     preferredRoles: user.preferredRoles ?? [],
     interests: user.interests ?? [],
@@ -71,6 +71,7 @@ export function ProfileEditForm({ user }: { user: IUser }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          availability: form.availability || null,
           graduationYear: form.graduationYear ? Number(form.graduationYear) : undefined,
         }),
       });
@@ -214,6 +215,7 @@ export function ProfileEditForm({ user }: { user: IUser }) {
             value={form.availability}
             onChange={(e) => update("availability", e.target.value)}
           >
+            <option value="">Not set</option>
             {AVAILABILITY.map((a) => (
               <option key={a} value={a}>
                 {a}

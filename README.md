@@ -43,6 +43,9 @@ needed to actually ship the project, not just find the team.
   interest.
 - **Deterministic skill matching** — a 0–100 compatibility score with the concrete
   reasons behind it. No AI, no black box.
+- **TeamForge Match** — describe a project, create it as a private team, rank existing
+  developers from profile data and public TeamForge projects, then send team invitations
+  through the existing Requests workflow. No external AI or matching API is used.
 - **Join requests** — send, accept, reject, cancel, with duplicate-request prevention.
 - **Developer connections** — send a private contact request with an optional note, accept or decline incoming requests, and manage your network without exposing email addresses.
 - **Notifications** — join requests, acceptances, rejections, membership changes, task
@@ -77,11 +80,11 @@ needed to actually ship the project, not just find the team.
 
 ```
 app/
-  api/                 Route handlers (auth, profile, teams, tasks, requests, contact, notifications, account)
+  api/                 Route handlers (auth, profile, team matching, teams, tasks, requests, contact, notifications, account)
   (public pages)        /, /about, /discover, /teams, /developers/[username], /teams/[slug], /signin, /signup
   (authenticated pages)  /dashboard, /profile, /profile/edit, /my-teams, /connections, /teams/create,
                          /teams/[slug]/{manage,workspace,tasks,members,activity,settings},
-                         /requests, /notifications, /settings, /onboarding
+                         /requests, /team-match, /notifications, /settings, /onboarding
 components/
   ui/                  Reusable primitives: Button, Input, Select, MultiSelect, Dialog,
                        ConfirmDialog, Card, Badge, Tabs, Skeleton, EmptyState, ErrorState,
@@ -113,23 +116,71 @@ and the database — never from a client-supplied `userId`, `teamId` ownership f
 role. Every mutating API route re-fetches the resource and checks ownership/membership
 before acting.
 
+## TeamForge Match
+
+`/team-match` uses `services/teamMatchService.ts` and the centralized settings in
+`services/teamMatchConfig.ts`. Submitting requirements creates a private Team using the
+existing Team model, stores matching preferences there, then returns at most 10 ranked
+profiles. Results can be reloaded from the private team page. Candidate queries use the
+indexed `User.skills` and `User.preferredRoles` fields, plus a bounded text search over
+public team history. User results contain only public profile fields; private team names
+and details are never returned or used in project relevance scoring.
+
+Requirements are normalized through one alias map (`JS` → `JavaScript`, `ReactJS` →
+`React`, `Node` → `Node.js`, `ML` → `Machine Learning`, `Mongo` → `MongoDB`). Known
+skills in the project name and description are extracted deterministically. Direct
+role matches score fully; otherwise a centralized role-to-skill map scores overlap.
+Project relevance uses the best public project overlap: keyword coverage (65%), matching
+skills (25%), and project type (10%) when provided. Experience compares a profile's
+stated level with the requested minimum and uses public team participation and
+completion counts. Availability compares the existing profile status with the optional
+minimum.
+
+The default weights are centralized and configurable:
+
+| Factor | Weight |
+| --- | ---: |
+| Required skill overlap | 45% |
+| Required role fit | 20% |
+| Public project relevance | 15% |
+| Experience | 10% |
+| Availability | 10% |
+
+Each factor is shown separately with a deterministic explanation. When experience or
+availability data is missing, its weight is omitted and the other weights are
+renormalized. `POST /api/team-match` creates the private team and returns the matches;
+`GET /api/team-match?teamId=...` recalculates them for its owner after a refresh. Neither
+endpoint calls an LLM, embeddings service, paid API, or any external matching service,
+and neither needs an AI API key.
+
+Result cards invite people through `POST /api/teams/[id]/invitations`. Invitations are
+stored in the existing JoinRequest collection and use the Requests page for accept,
+decline, status tracking, and cancellation. Accepting an invitation adds the user to
+the existing Team membership list. Private team pages and API responses are available
+only to members and people with a pending invitation.
+
 ---
 
 ## Database schema
 
+Availability is optional. The previous profile schema defaulted missing values to
+`Available`; `availabilityConfirmed` prevents those legacy defaults from being counted
+or displayed. A user can confirm or clear availability in profile settings. Older
+unconfirmed values are treated as missing data until the user confirms them.
+
 - **User** — name, username (unique), email (unique), passwordHash (never selected by
   default), avatar, headline, bio, location, college, graduationYear, experienceLevel,
-  availability, skills[], preferredRoles[], interests[], githubUrl, linkedinUrl,
+  availability (used only when explicitly confirmed), availabilityConfirmed, skills[], preferredRoles[], interests[], githubUrl, linkedinUrl,
   portfolioUrl, timestamps. Indexes: username, email (unique), skills, preferredRoles,
   text index on name/headline/bio.
 - **Team** — name, slug (unique), projectTitle, description, ownerId, members[]
   (embedded `{ userId, role, joinedAt }` subdocuments — the owner is *not* duplicated
   into this array), requiredRoles[], requiredSkills[], techStack[], teamSize,
-  projectType, status, visibility, deadline, timestamps. A `pre('save')` hook rejects
+  projectType, status, visibility, deadline, optional matchingPreferences, timestamps. A `pre('save')` hook rejects
   duplicate memberships. Indexes: slug (unique), status+visibility, requiredSkills,
-  requiredRoles, members.userId, text index on name/projectTitle/description.
+  requiredRoles, members.userId, ownerId+visibility, members.userId+visibility, text index on name/projectTitle/description.
 - **JoinRequest** — senderId, teamId, message, status (pending/accepted/rejected/
-  cancelled), timestamps. A partial unique index on `{senderId, teamId}` where
+  cancelled), kind (`join` or `invitation`), optional inviter and assigned role. A partial unique index on `{senderId, teamId}` where
   `status: "pending"` prevents duplicate pending requests at the database level, not
   just in application code.
 - **ContactRequest** — senderId, recipientId, optional message, status, timestamps. A canonical participant-pair key and partial unique index prevent duplicate pending requests in either direction.
@@ -158,8 +209,10 @@ is involved. It's a transparent, auditable weighted formula:
 Skill/role/interest overlap is computed as *(matched required items) / (total required
 items)*, case-insensitively; a team with no stated requirement for a category scores
 full marks on it rather than penalizing the person. Availability contributes on a fixed
-scale (Available = 100%, Limited = 50%, Not available = 0%). The final score is rounded
-to an integer 0–100 and always shown with the specific reasons behind it (e.g. "Matches
+scale (Available = 100%, Limited = 50%, Not available = 0%). When availability is
+unconfirmed or missing, that factor is omitted and the other weights are renormalized.
+The final score is rounded to an integer 0–100 and always shown with the specific
+reasons behind it (e.g. "Matches
 3 of 4 required skills", "Frontend Developer role requested"). The UI explicitly frames
 this as a compatibility signal based on structured data — not a judgment of a person's
 ability or worth.
@@ -220,10 +273,12 @@ explicitly, as a safety rail against accidentally wiping a shared/production dat
 npm run test
 ```
 
-21 unit tests currently cover:
-- The matching algorithm (`matchingService.test.ts`) — perfect matches, zero matches,
-  case-insensitivity, weighting correctness, score bounds, generated reasons, and
-  ranking multiple profiles against one team.
+45 unit tests cover:
+- Team compatibility and TeamForge Match — normalization, requirement extraction, skill
+  and role overlap, project relevance, experience and availability scoring, weight
+  renormalization, deterministic ranking, validation, and empty candidate sets.
+- API invitation integration — authorization, reuse of the JoinRequest model,
+  notification, and accepting an invitation into a team.
 - Profile completion scoring (`profileService.test.ts`) — monotonicity, upper bound,
   and that having one vs. three external links doesn't double-count.
 - Pure team helpers (`teamHelpers.test.ts`) — ownership, membership, and open-position

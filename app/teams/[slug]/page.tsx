@@ -9,6 +9,7 @@ import { TeamActions } from "@/components/teams/TeamActions";
 import { CompatibilityCard } from "@/components/teams/CompatibilityCard";
 import { connectDB } from "@/lib/db";
 import { Team } from "@/models/Team";
+import { JoinRequest } from "@/models/Request";
 import { User } from "@/models/User";
 import { getCurrentSession, getCurrentUser } from "@/lib/session";
 import { isTeamOwner, isTeamMember, openPositions } from "@/services/teamService";
@@ -16,10 +17,20 @@ import { calculateMatch } from "@/services/matchingService";
 
 export const dynamic = "force-dynamic";
 
-async function getTeamWithPeople(slug: string) {
+async function getTeamWithPeople(slug: string, viewerId?: string) {
   await connectDB();
   const team = await Team.findOne({ slug });
   if (!team) return null;
+  if (team.visibility === "private") {
+    const isMember = !!viewerId && isTeamMember(team, viewerId);
+    const isInvited = !!viewerId && !!(await JoinRequest.exists({
+      teamId: team._id,
+      senderId: viewerId,
+      kind: "invitation",
+      status: "pending",
+    }));
+    if (!isMember && !isInvited) return null;
+  }
 
   const owner = await User.findById(team.ownerId).select("name username avatar");
   const members = await User.find({
@@ -30,16 +41,22 @@ async function getTeamWithPeople(slug: string) {
 }
 
 export default async function TeamPage({ params }: { params: { slug: string } }) {
-  const data = await getTeamWithPeople(params.slug);
+  const session = await getCurrentSession();
+  const userId = session?.user?.id;
+  const data = await getTeamWithPeople(params.slug, userId);
   if (!data) notFound();
   const { team, owner, members } = data;
 
-  const session = await getCurrentSession();
-  const userId = session?.user?.id;
   const open = openPositions(team);
 
   const currentUser = userId ? await getCurrentUser() : null;
   const isViewerMember = !!userId && isTeamMember(team, userId);
+  const hasPendingInvitation = !!userId && !!(await JoinRequest.exists({
+    teamId: team._id,
+    senderId: userId,
+    kind: "invitation",
+    status: "pending",
+  }));
   const match =
     currentUser && !isViewerMember
       ? calculateMatch(
@@ -47,7 +64,7 @@ export default async function TeamPage({ params }: { params: { slug: string } })
             skills: currentUser.skills,
             preferredRoles: currentUser.preferredRoles,
             interests: currentUser.interests,
-            availability: currentUser.availability,
+            availability: currentUser.availabilityConfirmed ? currentUser.availability : undefined,
           },
           { requiredSkills: team.requiredSkills, requiredRoles: team.requiredRoles }
         )
@@ -71,6 +88,8 @@ export default async function TeamPage({ params }: { params: { slug: string } })
               slug={team.slug}
               isOwner={!!userId && isTeamOwner(team, userId)}
               isMember={!!userId && isTeamMember(team, userId) && !isTeamOwner(team, userId)}
+              isInvited={hasPendingInvitation && !isViewerMember}
+              canInvite={open > 0 && team.status !== "closed" && team.status !== "completed"}
               isFull={open <= 0}
               isSignedIn={!!userId}
               currentUserId={userId}

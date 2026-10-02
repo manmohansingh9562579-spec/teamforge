@@ -3,6 +3,10 @@ import { REQUEST_STATUS } from "@/lib/constants";
 
 export interface IRequest extends Document {
   senderId: Types.ObjectId;
+  /** For invitations this is the invited teammate; the team owner is stored in invitedBy. */
+  kind: "join" | "invitation";
+  invitedBy?: Types.ObjectId;
+  invitedRole?: string;
   teamId: Types.ObjectId;
   message: string;
   status: (typeof REQUEST_STATUS)[number];
@@ -13,6 +17,9 @@ export interface IRequest extends Document {
 const RequestSchema = new Schema<IRequest>(
   {
     senderId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    kind: { type: String, enum: ["join", "invitation"], default: "join", required: true },
+    invitedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    invitedRole: { type: String, trim: true, maxlength: 60 },
     teamId: { type: Schema.Types.ObjectId, ref: "Team", required: true },
     message: { type: String, default: "", maxlength: 500 },
     status: { type: String, enum: REQUEST_STATUS, default: "pending" },

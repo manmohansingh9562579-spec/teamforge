@@ -15,6 +15,8 @@ export function TeamActions({
   slug,
   isOwner,
   isMember,
+  isInvited,
+  canInvite,
   isFull,
   isSignedIn,
   currentUserId,
@@ -23,6 +25,8 @@ export function TeamActions({
   slug: string;
   isOwner: boolean;
   isMember: boolean;
+  isInvited?: boolean;
+  canInvite?: boolean;
   isFull: boolean;
   isSignedIn: boolean;
   currentUserId?: string;
@@ -37,6 +41,14 @@ export function TeamActions({
   if (isOwner) {
     return (
       <div className="flex flex-wrap gap-2">
+        {canInvite !== false && (
+          <Link
+            href={`/team-match?teamId=${teamId}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-accent/30 bg-accent-soft px-3 text-[13px] font-medium text-accent hover:bg-accent-soft/80"
+          >
+            <UserPlus className="h-3.5 w-3.5" /> Find teammates
+          </Link>
+        )}
         <Link
           href={`/teams/${slug}/manage`}
           className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-[13px] font-medium text-text hover:bg-surface-hover"
@@ -94,6 +106,17 @@ export function TeamActions({
           }}
         />
       </>
+    );
+  }
+
+  if (isInvited) {
+    return (
+      <Link
+        href="/requests?tab=invites"
+        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-accent/30 bg-accent-soft px-3 text-[13px] font-medium text-accent hover:bg-accent-soft/80"
+      >
+        <UserPlus className="h-3.5 w-3.5" /> Respond to invitation
+      </Link>
     );
   }
 

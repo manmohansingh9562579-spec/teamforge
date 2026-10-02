@@ -31,17 +31,25 @@ export async function GET(req: Request) {
     if (skill) filter.skills = skill;
     if (role) filter.preferredRoles = role;
     if (experience) filter.experienceLevel = experience;
-    if (availability) filter.availability = availability;
+    if (availability) {
+      filter.availability = availability;
+      filter.availabilityConfirmed = true;
+    }
     if (interest) filter.interests = interest;
 
-    const [developers, total] = await Promise.all([
+    const [developerRows, total] = await Promise.all([
       User.find(filter)
         .sort({ createdAt: -1 })
         .skip((page - 1) * PAGE_SIZE)
         .limit(PAGE_SIZE)
-        .select("name username avatar headline location skills preferredRoles experienceLevel availability interests"),
+        .select("name username avatar headline location skills preferredRoles experienceLevel availability availabilityConfirmed interests")
+        .lean(),
       User.countDocuments(filter),
     ]);
+    const developers = developerRows.map(({ availability, availabilityConfirmed, ...developer }) => ({
+      ...developer,
+      availability: availabilityConfirmed ? availability : undefined,
+    }));
 
     return apiOk({
       developers,

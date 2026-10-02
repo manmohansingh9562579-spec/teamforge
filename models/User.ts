@@ -19,6 +19,7 @@ export interface IUser extends Document {
   graduationYear?: number;
   experienceLevel?: (typeof EXPERIENCE_LEVELS)[number];
   availability?: (typeof AVAILABILITY)[number];
+  availabilityConfirmed: boolean;
   skills: string[];
   preferredRoles: string[];
   interests: string[];
@@ -57,7 +58,8 @@ const UserSchema = new Schema<IUser>(
     college: { type: String, default: "" },
     graduationYear: { type: Number },
     experienceLevel: { type: String, enum: EXPERIENCE_LEVELS },
-    availability: { type: String, enum: AVAILABILITY, default: "Available" },
+    availability: { type: String, enum: AVAILABILITY },
+    availabilityConfirmed: { type: Boolean, default: false },
     skills: { type: [String], default: [] },
     preferredRoles: { type: [String], enum: ROLES, default: [] },
     interests: { type: [String], enum: INTERESTS, default: [] },

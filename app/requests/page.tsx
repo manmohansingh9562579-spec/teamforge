@@ -12,7 +12,7 @@ export default async function RequestsPage() {
       <div className="container-page max-w-[720px] py-10">
         <h1 className="text-xl font-semibold tracking-tight text-text">Requests</h1>
         <p className="mt-1 text-sm text-muted">
-          Manage join requests for your teams, and track requests you&apos;ve sent.
+          Manage team join requests and invitations you&apos;ve sent or received.
         </p>
         <div className="mt-6">
           <RequestsPageClient />

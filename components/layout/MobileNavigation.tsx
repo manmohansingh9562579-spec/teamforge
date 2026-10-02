@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Search, Users, FolderKanban, Bell, Network } from "lucide-react";
+import { LayoutDashboard, Search, Users, FolderKanban, Bell, Network, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/discover", label: "Discover", icon: Search },
+  { href: "/team-match", label: "Match", icon: Sparkles },
   { href: "/teams", label: "Teams", icon: Users },
   { href: "/my-teams", label: "My teams", icon: FolderKanban },
   { href: "/connections", label: "Connect", icon: Network },

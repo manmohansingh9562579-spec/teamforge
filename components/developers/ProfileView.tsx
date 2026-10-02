@@ -19,6 +19,7 @@ type ProfileDisplayUser = Pick<
   | "graduationYear"
   | "experienceLevel"
   | "availability"
+  | "availabilityConfirmed"
   | "skills"
   | "preferredRoles"
   | "interests"
@@ -158,7 +159,7 @@ export function ProfileView({
                   </div>
                 </div>
               )}
-              {user.availability && (
+              {user.availabilityConfirmed && user.availability && (
                 <div>
                   <h3 className="text-xs font-medium uppercase tracking-wide text-muted">Availability</h3>
                   <Badge className="mt-2" tone={user.availability === "Available" ? "success" : "neutral"}>

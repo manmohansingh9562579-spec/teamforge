@@ -18,6 +18,7 @@ export default withAuth(
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/team-match/:path*",
     "/onboarding",
     "/profile",
     "/profile/edit/:path*",
