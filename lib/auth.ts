@@ -51,9 +51,9 @@ export const authOptions: NextAuthOptions = {
         await connectDB();
         const currentUser = await User.findById(token.id).select("+authVersion").lean();
         if (!currentUser || (currentUser.authVersion ?? 0) !== Number(token.authVersion ?? 0)) {
-          token.id = undefined;
-          token.username = undefined;
-          token.authVersion = undefined;
+          token.id = "";
+          token.username = "";
+          token.authVersion = -1;
         }
       }
       return token;
