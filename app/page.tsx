@@ -9,6 +9,7 @@ import {
   Bell,
   Activity,
   LayoutGrid,
+  Trophy,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -51,6 +52,7 @@ const features = [
   { icon: KanbanSquare, title: "Task tracking", body: "A Kanban board with priorities, assignees and due dates." },
   { icon: Bell, title: "Notifications", body: "Know when someone wants to connect, join your team, or help move a task forward." },
   { icon: Activity, title: "Activity timeline", body: "A running record of what changed on your team, and who changed it." },
+  { icon: Trophy, title: "Weekly build challenge", body: "Pick up a small prompt, build with others, and share your finished project." },
 ];
 
 export default function HomePage() {

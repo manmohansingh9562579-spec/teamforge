@@ -45,6 +45,7 @@ needed to actually ship the project, not just find the team.
   reasons behind it. No AI, no black box.
 - **Join requests** — send, accept, reject, cancel, with duplicate-request prevention.
 - **Developer connections** — send a private contact request with an optional note, accept or decline incoming requests, and manage your network without exposing email addresses.
+- **Weekly Build Challenge** — a rotating weekly project prompt, public build submissions with GitHub/demo links, and editable entries for signed-in users. No paid email or AI service is required.
 - **Notifications** — join requests, acceptances, rejections, membership changes, task
   assignments, task status changes.
 - **Team workspace** — Overview (real computed progress), Kanban task board, Members
@@ -78,7 +79,7 @@ needed to actually ship the project, not just find the team.
 ```
 app/
   api/                 Route handlers (auth, profile, teams, tasks, requests, contact, notifications, account)
-  (public pages)        /, /about, /discover, /teams, /developers/[username], /teams/[slug], /signin, /signup
+  (public pages)        /, /about, /discover, /teams, /challenges, /developers/[username], /teams/[slug], /signin, /signup
   (authenticated pages)  /dashboard, /profile, /profile/edit, /my-teams, /connections, /teams/create,
                          /teams/[slug]/{manage,workspace,tasks,members,activity,settings},
                          /requests, /notifications, /settings, /onboarding
@@ -94,7 +95,7 @@ components/
   workspace/           WorkspaceNav, KanbanBoard, TaskCard, MembersList, TeamSettingsForm
 lib/                   db.ts, auth.ts, session.ts, api.ts, notify.ts, teamAccess.ts,
                        constants.ts, utils.ts
-models/                User, Team, Request (JoinRequest), ContactRequest, Notification, Task, Activity
+models/                User, Team, Request (JoinRequest), ContactRequest, Notification, Task, ChallengeSubmission, Activity
 services/              matchingService.ts, profileService.ts, teamService.ts,
                        teamHelpers.ts (pure, client-safe logic split out from teamService)
 validations/           Zod schemas: auth, team, task
@@ -137,6 +138,7 @@ before acting.
   createdAt. Compound index on `{userId, isRead, createdAt}`.
 - **Task** — teamId, title, description, status (To Do/In Progress/Review/Done),
   priority (Low/Medium/High), assignee, createdBy, dueDate, timestamps.
+- **ChallengeSubmission** — challengeKey, userId, projectName, summary, repositoryUrl, demoUrl, timestamps. A unique `{challengeKey, userId}` index allows one editable build entry per member each week.
 - **Activity** — teamId, actorId, action, entityType, entityId, metadata, createdAt.
   Indexed on `{teamId, createdAt}` for fast timeline queries.
 

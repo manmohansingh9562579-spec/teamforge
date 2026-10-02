@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Search, UserCog, Bell, Inbox, FolderKanban } from "lucide-react";
+import { Plus, Search, UserCog, Bell, Inbox, FolderKanban, Trophy } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/Badge";
 import { TeamCard } from "@/components/teams/TeamCard";
@@ -73,7 +73,7 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Link
             href="/teams/create"
             className="flex items-center gap-2.5 rounded-lg border border-border bg-surface p-4 hover:bg-surface-hover"
@@ -94,6 +94,13 @@ export default async function DashboardPage() {
           >
             <UserCog className="h-4 w-4 text-accent" />
             <span className="text-[13px] font-medium text-text">Complete profile</span>
+          </Link>
+          <Link
+            href="/challenges"
+            className="flex items-center gap-2.5 rounded-lg border border-border bg-surface p-4 hover:bg-surface-hover"
+          >
+            <Trophy className="h-4 w-4 text-accent" />
+            <span className="text-[13px] font-medium text-text">Weekly build challenge</span>
           </Link>
         </div>
 

@@ -5,6 +5,7 @@ import { JoinRequest } from "@/models/Request";
 import { Task } from "@/models/Task";
 import { Activity } from "@/models/Activity";
 import { Notification } from "@/models/Notification";
+import { ChallengeSubmission } from "@/models/ChallengeSubmission";
 import { getCurrentSession } from "@/lib/session";
 import { apiOk, apiError, handleApiError } from "@/lib/api";
 
@@ -35,6 +36,7 @@ export async function DELETE() {
     await Promise.all([
       JoinRequest.deleteMany({ senderId: userId }),
       Notification.deleteMany({ userId }),
+      ChallengeSubmission.deleteMany({ userId }),
       Task.updateMany({ assignee: userId }, { $unset: { assignee: "" } }),
     ]);
 
