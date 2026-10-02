@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Search, UserCog, Bell, Inbox, FolderKanban, Sparkles } from "lucide-react";
+import { Plus, Search, UserCog, Bell, Inbox, FolderKanban } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/Badge";
 import { TeamCard } from "@/components/teams/TeamCard";
@@ -73,14 +73,7 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link
-            href="/team-match"
-            className="flex items-center gap-2.5 rounded-lg border border-accent/30 bg-accent-soft/40 p-4 hover:bg-accent-soft"
-          >
-            <Sparkles className="h-4 w-4 text-accent" />
-            <span className="text-[13px] font-medium text-text">Find My Team</span>
-          </Link>
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
           <Link
             href="/teams/create"
             className="flex items-center gap-2.5 rounded-lg border border-border bg-surface p-4 hover:bg-surface-hover"

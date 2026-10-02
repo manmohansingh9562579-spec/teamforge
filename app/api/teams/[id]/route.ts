@@ -15,19 +15,8 @@ async function findTeam(id: string) {
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getCurrentSession();
     const team = await findTeam(params.id);
     if (!team) return apiError("Team not found", 404);
-    if (team.visibility === "private") {
-      const isMember = !!session?.user?.id && (isTeamOwner(team, session.user.id) || team.members.some((member) => member.userId.toString() === session.user?.id));
-      const isInvited = !!session?.user?.id && !!(await JoinRequest.exists({
-        teamId: team._id,
-        senderId: session.user.id,
-        kind: "invitation",
-        status: "pending",
-      }));
-      if (!isMember && !isInvited) return apiError("Team not found", 404);
-    }
     return apiOk(team);
   } catch (err) {
     return handleApiError(err);

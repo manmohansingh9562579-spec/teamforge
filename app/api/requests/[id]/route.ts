@@ -30,14 +30,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const isSender = request.senderId.toString() === session.user.id;
     const isOwner = isTeamOwner(team, session.user.id);
-    const isInviter = request.kind === "invitation" && request.invitedBy?.toString() === session.user.id;
-    if (request.kind === "invitation" && !request.invitedBy) return apiError("Invalid invitation", 400);
 
     if (status === "cancelled") {
-      if (request.kind === "invitation" ? !isInviter : !isSender) return apiError("Forbidden", 403);
+      if (!isSender) return apiError("Forbidden", 403);
     } else {
-      // Team owners decide join requests; invited users decide invitations.
-      if (request.kind === "invitation" ? !isSender : !isOwner) return apiError("Forbidden", 403);
+      // accepted / rejected — only the team owner may decide.
+      if (!isOwner) return apiError("Forbidden", 403);
     }
 
     if (status === "accepted") {
@@ -49,9 +47,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       if (!alreadyMember) {
         team.members.push({
           userId: request.senderId,
-          role: request.kind === "invitation"
-            ? request.invitedRole ?? team.requiredRoles[0] ?? "Member"
-            : role ?? team.requiredRoles[0] ?? "Member",
+          role: role ?? team.requiredRoles[0] ?? "Member",
           joinedAt: new Date(),
         } as any);
         await team.save();
@@ -65,44 +61,25 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         entityId: request.senderId,
       });
 
-      const recipientId = request.kind === "invitation" ? request.invitedBy! : request.senderId;
       await notify({
-        userId: recipientId,
-        type: request.kind === "invitation" ? "team_invitation_accepted" : "request_accepted",
-        message: request.kind === "invitation"
-          ? `${session.user.name || "A developer"} accepted your invitation to join ${team.name}`
-          : `Your request to join ${team.name} was accepted`,
-        relatedEntity: { kind: "request", id: request._id },
+        userId: request.senderId,
+        type: "request_accepted",
+        message: `Your request to join ${team.name} was accepted`,
+        relatedEntity: { kind: "team", id: team._id },
       });
     }
 
-    if (status === "rejected" && request.kind === "invitation") {
-      await notify({
-        userId: request.invitedBy!,
-        type: "team_invitation_declined",
-        message: `${session.user.name || "A developer"} declined your invitation to join ${team.name}`,
-        relatedEntity: { kind: "request", id: request._id },
-      });
-    } else if (status === "rejected") {
+    if (status === "rejected") {
       await notify({
         userId: request.senderId,
         type: "request_rejected",
         message: `Your request to join ${team.name} was declined`,
-        relatedEntity: { kind: "request", id: request._id },
+        relatedEntity: { kind: "team", id: team._id },
       });
     }
 
     request.status = status;
     await request.save();
-
-    if (status === "cancelled" && request.kind === "invitation") {
-      await notify({
-        userId: request.senderId,
-        type: "team_invitation_cancelled",
-        message: `The invitation to join ${team.name} was withdrawn`,
-        relatedEntity: { kind: "request", id: request._id },
-      });
-    }
 
     return apiOk(request);
   } catch (err) {

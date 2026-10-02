@@ -1,5 +1,5 @@
 import { Schema, model, models, type Document, type Model, Types } from "mongoose";
-import { EXPERIENCE_LEVELS, PROJECT_TYPES, TEAM_STATUS, TEAM_VISIBILITY } from "@/lib/constants";
+import { PROJECT_TYPES, TEAM_STATUS, TEAM_VISIBILITY } from "@/lib/constants";
 
 export interface IMembership {
   userId: Types.ObjectId;
@@ -22,11 +22,6 @@ export interface ITeam extends Document {
   status: (typeof TEAM_STATUS)[number];
   visibility: (typeof TEAM_VISIBILITY)[number];
   deadline?: Date;
-  matchingPreferences?: {
-    experienceLevel?: (typeof EXPERIENCE_LEVELS)[number];
-    availability?: "Available" | "Limited";
-    projectType?: (typeof PROJECT_TYPES)[number];
-  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,11 +51,6 @@ const TeamSchema = new Schema<ITeam>(
     status: { type: String, enum: TEAM_STATUS, default: "forming" },
     visibility: { type: String, enum: TEAM_VISIBILITY, default: "public" },
     deadline: { type: Date },
-    matchingPreferences: {
-      experienceLevel: { type: String, enum: EXPERIENCE_LEVELS },
-      availability: { type: String, enum: ["Available", "Limited"] },
-      projectType: { type: String, enum: PROJECT_TYPES },
-    },
   },
   { timestamps: true }
 );
@@ -82,8 +72,6 @@ TeamSchema.index({ status: 1, visibility: 1 });
 TeamSchema.index({ requiredSkills: 1 });
 TeamSchema.index({ requiredRoles: 1 });
 TeamSchema.index({ "members.userId": 1 });
-TeamSchema.index({ ownerId: 1, visibility: 1 });
-TeamSchema.index({ "members.userId": 1, visibility: 1 });
 TeamSchema.index({ name: "text", projectTitle: "text", description: "text" });
 
 export const Team: Model<ITeam> = models.Team || model<ITeam>("Team", TeamSchema);

@@ -21,7 +21,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await connectDB();
     const team = await Team.findById(params.id);
     if (!team) return apiError("Team not found", 404);
-    if (team.visibility === "private") return apiError("This team is invite-only", 403);
 
     if (team.status === "closed" || team.status === "completed") {
       return apiError("This team is not accepting requests", 400);

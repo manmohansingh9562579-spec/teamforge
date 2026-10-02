@@ -70,15 +70,6 @@ describe("calculateMatch", () => {
     expect(result.breakdown.availability).toBe(50);
   });
 
-  it("renormalizes the compatibility score when availability is not confirmed", () => {
-    const result = calculateMatch(
-      { skills: ["React"], preferredRoles: [], interests: [], availability: undefined },
-      { requiredSkills: ["React"], requiredRoles: ["Backend Developer"], interests: ["Hackathons"] }
-    );
-    expect(result.breakdown.availability).toBeNull();
-    expect(result.score).toBe(53);
-  });
-
   it("never returns a score outside 0-100", () => {
     const result = calculateMatch(
       { skills: [], preferredRoles: [], interests: [], availability: undefined },

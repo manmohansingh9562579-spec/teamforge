@@ -8,7 +8,7 @@ import { User, type IUser } from "@/models/User";
 import { createContactRequestSchema } from "@/validations/contact";
 
 const publicProfileFields =
-  "name username avatar headline location college graduationYear experienceLevel availability availabilityConfirmed skills preferredRoles interests githubUrl linkedinUrl portfolioUrl";
+  "name username avatar headline location college graduationYear experienceLevel availability skills preferredRoles interests githubUrl linkedinUrl portfolioUrl";
 
 type PublicContactProfile = Pick<
   IUser,
@@ -21,7 +21,6 @@ type PublicContactProfile = Pick<
   | "graduationYear"
   | "experienceLevel"
   | "availability"
-  | "availabilityConfirmed"
   | "skills"
   | "preferredRoles"
   | "interests"
@@ -50,7 +49,7 @@ function toPublicProfile(profile: PublicContactProfile) {
     college: profile.college,
     graduationYear: profile.graduationYear,
     experienceLevel: profile.experienceLevel,
-    availability: profile.availabilityConfirmed ? profile.availability : undefined,
+    availability: profile.availability,
     skills: profile.skills,
     preferredRoles: profile.preferredRoles,
     interests: profile.interests,

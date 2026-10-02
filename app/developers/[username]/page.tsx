@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 async function getDeveloper(username: string) {
   await connectDB();
   return User.findOne({ username: username.toLowerCase() })
-    .select("name username avatar headline bio location college graduationYear experienceLevel availability availabilityConfirmed skills preferredRoles interests githubUrl linkedinUrl portfolioUrl")
+    .select("name username avatar headline bio location college graduationYear experienceLevel availability skills preferredRoles interests githubUrl linkedinUrl portfolioUrl")
     .lean();
 }
 

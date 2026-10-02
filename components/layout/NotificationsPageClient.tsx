@@ -121,26 +121,6 @@ export function NotificationsPageClient() {
             );
           }
 
-          if (notification.relatedEntity?.kind === "request") {
-            const requestTab = notification.type === "team_invitation"
-              ? "invites"
-              : notification.type === "team_invitation_accepted" || notification.type === "team_invitation_declined"
-              ? "sentInvites"
-              : notification.type === "team_invitation_cancelled"
-              ? "invites"
-              : "sent";
-            return (
-              <Link
-                key={notification._id}
-                href={`/requests?tab=${requestTab}`}
-                onClick={() => !notification.isRead && markRead(notification._id)}
-                className={className}
-              >
-                {content}
-              </Link>
-            );
-          }
-
           return (
             <button
               key={notification._id}

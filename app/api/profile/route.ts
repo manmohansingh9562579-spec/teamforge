@@ -22,23 +22,10 @@ export async function PATCH(req: Request) {
 
     const body = await req.json();
     const data = profileSchema.partial().parse(body);
-    const { availability, ...profileData } = data;
-    const update: { $set: Record<string, unknown>; $unset?: Record<string, number> } = {
-      $set: profileData,
-    };
-    if (Object.prototype.hasOwnProperty.call(data, "availability")) {
-      if (availability === null) {
-        update.$unset = { availability: 1 };
-        update.$set.availabilityConfirmed = false;
-      } else if (availability) {
-        update.$set.availability = availability;
-        update.$set.availabilityConfirmed = true;
-      }
-    }
 
     await connectDB();
     // Authorization is derived from the session, never from a client-supplied id.
-    const user = await User.findByIdAndUpdate(session.user.id, update, {
+    const user = await User.findByIdAndUpdate(session.user.id, data, {
       new: true,
       runValidators: true,
     });

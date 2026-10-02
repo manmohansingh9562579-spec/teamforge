@@ -3,8 +3,6 @@ import { Notification } from "@/models/Notification";
 import { getCurrentSession } from "@/lib/session";
 import { apiOk, apiError, handleApiError } from "@/lib/api";
 
-export const dynamic = "force-dynamic";
-
 export async function GET(req: Request) {
   try {
     const session = await getCurrentSession();

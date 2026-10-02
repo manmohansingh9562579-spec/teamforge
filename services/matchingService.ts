@@ -32,12 +32,17 @@ export interface MatchResult {
     skill: number;
     role: number;
     interest: number;
-    availability: number | null;
+    availability: number;
   };
   reasons: string[];
 }
 
-import { EXISTING_TEAM_COMPATIBILITY_WEIGHTS } from "@/services/teamMatchConfig";
+const WEIGHTS = {
+  skill: 0.45,
+  role: 0.25,
+  interest: 0.15,
+  availability: 0.15,
+};
 
 function normalize(value: string) {
   return value.trim().toLowerCase();
@@ -57,27 +62,15 @@ export function calculateMatch(profile: MatchProfile, target: MatchTarget): Matc
     ? overlapRatio(profile.interests, target.interests)
     : { ratio: profile.interests.length > 0 ? 1 : 0.5, matched: [] };
 
-  const availabilityScore = profile.availability === "Available"
-    ? 1
-    : profile.availability === "Limited"
-    ? 0.5
-    : profile.availability === "Not available"
-    ? 0
-    : null;
+  const availabilityScore =
+    profile.availability === "Available" ? 1 : profile.availability === "Limited" ? 0.5 : 0;
 
-  const skillScore = skillMatch.ratio * EXISTING_TEAM_COMPATIBILITY_WEIGHTS.skill;
-  const roleScore = roleMatch.ratio * EXISTING_TEAM_COMPATIBILITY_WEIGHTS.role;
-  const interestScore = interestMatch.ratio * EXISTING_TEAM_COMPATIBILITY_WEIGHTS.interest;
-  const availabilityWeighted = availabilityScore === null
-    ? 0
-    : availabilityScore * EXISTING_TEAM_COMPATIBILITY_WEIGHTS.availability;
+  const skillScore = skillMatch.ratio * WEIGHTS.skill;
+  const roleScore = roleMatch.ratio * WEIGHTS.role;
+  const interestScore = interestMatch.ratio * WEIGHTS.interest;
+  const availabilityWeighted = availabilityScore * WEIGHTS.availability;
 
-  const availableWeight =
-    EXISTING_TEAM_COMPATIBILITY_WEIGHTS.skill +
-    EXISTING_TEAM_COMPATIBILITY_WEIGHTS.role +
-    EXISTING_TEAM_COMPATIBILITY_WEIGHTS.interest +
-    (availabilityScore === null ? 0 : EXISTING_TEAM_COMPATIBILITY_WEIGHTS.availability);
-  const total = (skillScore + roleScore + interestScore + availabilityWeighted) / availableWeight;
+  const total = skillScore + roleScore + interestScore + availabilityWeighted;
   const score = Math.round(total * 100);
 
   const reasons: string[] = [];
@@ -106,7 +99,7 @@ export function calculateMatch(profile: MatchProfile, target: MatchTarget): Matc
       skill: Math.round(skillMatch.ratio * 100),
       role: Math.round(roleMatch.ratio * 100),
       interest: Math.round(interestMatch.ratio * 100),
-      availability: availabilityScore === null ? null : Math.round(availabilityScore * 100),
+      availability: Math.round(availabilityScore * 100),
     },
     reasons,
   };
