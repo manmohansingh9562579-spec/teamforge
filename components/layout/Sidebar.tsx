@@ -10,6 +10,7 @@ import {
   Inbox,
   Bell,
   Network,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ const links = [
   { href: "/my-teams", label: "My teams", icon: FolderKanban },
   { href: "/requests", label: "Requests", icon: Inbox },
   { href: "/connections", label: "Connections", icon: Network },
+  { href: "/messages", label: "Messages", icon: MessageCircle },
   { href: "/notifications", label: "Notifications", icon: Bell },
 ];
 

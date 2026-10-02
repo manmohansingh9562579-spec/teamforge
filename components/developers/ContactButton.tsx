@@ -8,7 +8,7 @@ import { Check, Clock3, UserRoundPlus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 
-type Relationship = {
+export type ContactRelationship = {
   status: "pending" | "accepted" | "rejected" | "cancelled";
   direction: "incoming" | "outgoing";
 };
@@ -16,13 +16,15 @@ type Relationship = {
 export function ContactButton({
   recipientId,
   recipientName,
+  initialRelationship,
 }: {
   recipientId: string;
   recipientName: string;
+  initialRelationship?: ContactRelationship | null;
 }) {
   const { status: authStatus } = useSession();
-  const [relationship, setRelationship] = useState<Relationship | null>(null);
-  const [checking, setChecking] = useState(true);
+  const [relationship, setRelationship] = useState<ContactRelationship | null>(initialRelationship ?? null);
+  const [checking, setChecking] = useState(initialRelationship === undefined);
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -46,9 +48,14 @@ export function ContactButton({
       setChecking(false);
       return;
     }
+    if (initialRelationship !== undefined) {
+      setRelationship(initialRelationship);
+      setChecking(false);
+      return;
+    }
     setChecking(true);
     loadRelationship();
-  }, [authStatus, loadRelationship]);
+  }, [authStatus, initialRelationship, loadRelationship]);
 
   const closeDialog = useCallback(() => setOpen(false), []);
 

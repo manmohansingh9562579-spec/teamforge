@@ -4,11 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { MoreVertical, UserMinus } from "lucide-react";
+import { MessageCircle, UserMinus } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge, SkillBadge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Select } from "@/components/ui/Select";
+import { ContactButton, type ContactRelationship } from "@/components/developers/ContactButton";
 
 export interface MemberRow {
   userId: string;
@@ -19,15 +20,18 @@ export interface MemberRow {
   role: string;
   joinedAt: string;
   isOwner: boolean;
+  relationship: ContactRelationship | null;
 }
 
 export function MembersList({
   teamId,
   members,
+  viewerId,
   viewerIsOwner,
 }: {
   teamId: string;
   members: MemberRow[];
+  viewerId: string;
   viewerIsOwner: boolean;
 }) {
   const router = useRouter();
@@ -56,6 +60,7 @@ export function MembersList({
             <th className="px-4 py-2.5 font-medium">Role</th>
             <th className="px-4 py-2.5 font-medium">Skills</th>
             <th className="px-4 py-2.5 font-medium">Joined</th>
+            <th className="px-4 py-2.5 font-medium">Connect</th>
             {viewerIsOwner && <th className="px-4 py-2.5" />}
           </tr>
         </thead>
@@ -111,6 +116,25 @@ export function MembersList({
               </td>
               <td className="px-4 py-3 text-muted">
                 {new Date(m.joinedAt).toLocaleDateString()}
+              </td>
+              <td className="px-4 py-3">
+                {m.userId === viewerId ? (
+                  <span className="text-muted">You</span>
+                ) : (
+                  <div className="flex min-w-[240px] flex-wrap items-center gap-2">
+                    <ContactButton
+                      recipientId={m.userId}
+                      recipientName={m.name}
+                      initialRelationship={m.relationship}
+                    />
+                    <Link
+                      href={`/messages/${m.userId}`}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-text transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                    >
+                      <MessageCircle className="h-4 w-4" aria-hidden="true" /> Message
+                    </Link>
+                  </div>
+                )}
               </td>
               {viewerIsOwner && (
                 <td className="px-4 py-3 text-right">

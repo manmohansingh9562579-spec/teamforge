@@ -1,17 +1,38 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { WorkspaceNav } from "@/components/workspace/WorkspaceNav";
 import { MembersList, type MemberRow } from "@/components/workspace/MembersList";
+import type { ContactRelationship } from "@/components/developers/ContactButton";
 import { requireTeamAccess } from "@/lib/teamAccess";
+import { ContactRequest } from "@/models/ContactRequest";
 import { User } from "@/models/User";
 
 export const dynamic = "force-dynamic";
 
 export default async function TeamMembersPage({ params }: { params: { slug: string } }) {
-  const { team, isOwner } = await requireTeamAccess(params.slug);
+  const { team, userId, isOwner } = await requireTeamAccess(params.slug);
 
   const memberIds = [team.ownerId, ...team.members.map((m) => m.userId)];
   const users = await User.find({ _id: { $in: memberIds } }).select("name username avatar skills");
   const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+  const peerIds = memberIds.map((id) => id.toString()).filter((id) => id !== userId);
+  const relationships = peerIds.length
+    ? await ContactRequest.find({
+        status: { $in: ["pending", "accepted"] },
+        $or: [
+          { senderId: userId, recipientId: { $in: peerIds } },
+          { recipientId: userId, senderId: { $in: peerIds } },
+        ],
+      }).select("senderId recipientId status").lean()
+    : [];
+  const relationshipByPeerId = new Map<string, ContactRelationship>();
+  for (const relationship of relationships) {
+    const senderId = relationship.senderId.toString();
+    const peerId = senderId === userId ? relationship.recipientId.toString() : senderId;
+    relationshipByPeerId.set(peerId, {
+      status: relationship.status as ContactRelationship["status"],
+      direction: senderId === userId ? "outgoing" : "incoming",
+    });
+  }
 
   const rows: MemberRow[] = [];
   const owner = userMap.get(team.ownerId.toString());
@@ -25,6 +46,7 @@ export default async function TeamMembersPage({ params }: { params: { slug: stri
       role: "Owner",
       joinedAt: team.createdAt.toISOString(),
       isOwner: true,
+      relationship: relationshipByPeerId.get(owner._id.toString()) ?? null,
     });
   }
   for (const m of team.members) {
@@ -39,6 +61,7 @@ export default async function TeamMembersPage({ params }: { params: { slug: stri
       role: m.role,
       joinedAt: m.joinedAt.toISOString(),
       isOwner: false,
+      relationship: relationshipByPeerId.get(u._id.toString()) ?? null,
     });
   }
 
@@ -49,7 +72,7 @@ export default async function TeamMembersPage({ params }: { params: { slug: stri
         <h1 className="text-lg font-semibold tracking-tight text-text">{team.projectTitle}</h1>
         <p className="mt-1 text-[13px] text-muted">Members · {rows.length}</p>
         <div className="mt-6">
-          <MembersList teamId={team._id.toString()} members={rows} viewerIsOwner={isOwner} />
+          <MembersList teamId={team._id.toString()} members={rows} viewerId={userId} viewerIsOwner={isOwner} />
         </div>
       </div>
     </AppShell>

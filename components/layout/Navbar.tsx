@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Bell, Menu, Network, X } from "lucide-react";
+import { Bell, Menu, MessageCircle, Network, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
@@ -58,6 +58,13 @@ export function Navbar() {
                 className="flex h-10 w-10 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-hover hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
               >
                 <Network className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/messages"
+                aria-label="Messages"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-hover hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+              >
+                <MessageCircle className="h-4 w-4" />
               </Link>
               <Link
                 href="/notifications"
@@ -135,6 +142,7 @@ export function Navbar() {
                 <>
                   <Link href="/dashboard" onClick={() => setOpen(false)} className="min-h-11 rounded-lg px-3 py-3 text-sm font-medium text-text hover:bg-surface-hover">Dashboard</Link>
                   <Link href="/connections" onClick={() => setOpen(false)} className="min-h-11 rounded-lg px-3 py-3 text-sm font-medium text-text hover:bg-surface-hover">Connections</Link>
+                  <Link href="/messages" onClick={() => setOpen(false)} className="min-h-11 rounded-lg px-3 py-3 text-sm font-medium text-text hover:bg-surface-hover">Messages</Link>
                   <Link href="/notifications" onClick={() => setOpen(false)} className="min-h-11 rounded-lg px-3 py-3 text-sm font-medium text-text hover:bg-surface-hover">Notifications</Link>
                   <Link href="/profile" onClick={() => setOpen(false)} className="min-h-11 rounded-lg px-3 py-3 text-sm font-medium text-text hover:bg-surface-hover">Your profile</Link>
                 </>

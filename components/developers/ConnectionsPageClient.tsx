@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Check, Clock3, Inbox, Network, UserRoundPlus, X } from "lucide-react";
+import { Check, Clock3, Inbox, MessageCircle, Network, UserRoundPlus, X } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -243,9 +243,17 @@ export function ConnectionsPageClient() {
                 <div className="shrink-0 text-right">
                   <Badge tone="success"><Check className="mr-1 h-3 w-3" /> Connected</Badge>
                   {connection.person && (
-                    <Link href={`/developers/${connection.person.username}`} className="mt-2 block text-xs font-medium text-accent hover:underline">
-                      View profile
-                    </Link>
+                    <div className="mt-2 flex flex-wrap justify-end gap-2">
+                      <Link href={`/developers/${connection.person.username}`} className="inline-flex min-h-9 items-center rounded-lg px-2 text-xs font-medium text-accent hover:bg-accent-soft hover:underline">
+                        View profile
+                      </Link>
+                      <Link
+                        href={`/messages/${connection.person.id}`}
+                        className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-medium text-text transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" /> Message
+                      </Link>
+                    </div>
                   )}
                 </div>
               </Card>
