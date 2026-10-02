@@ -23,7 +23,7 @@ export const authOptions: NextAuthOptions = {
         const { email, password } = parsed.data;
 
         await connectDB();
-        const user = await User.findOne({ email }).select("+passwordHash");
+        const user = await User.findOne({ email }).select("+passwordHash +authVersion");
         if (!user) return null;
 
         const valid = await bcrypt.compare(password, user.passwordHash);
@@ -35,6 +35,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           username: user.username,
           image: user.avatar || null,
+          authVersion: user.authVersion ?? 0,
         };
       },
     }),
@@ -44,10 +45,21 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = (user as any).id;
         token.username = (user as any).username;
+        token.authVersion = (user as any).authVersion ?? 0;
+      } else if (token.id) {
+        // Password recovery increments authVersion to invalidate every existing JWT.
+        await connectDB();
+        const currentUser = await User.findById(token.id).select("+authVersion").lean();
+        if (!currentUser || (currentUser.authVersion ?? 0) !== Number(token.authVersion ?? 0)) {
+          token.id = undefined;
+          token.username = undefined;
+          token.authVersion = undefined;
+        }
       }
       return token;
     },
     async session({ session, token }) {
+      if (!token.id) return { ...session, user: undefined };
       if (session.user) {
         (session.user as any).id = token.id;
         (session.user as any).username = token.username;

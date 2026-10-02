@@ -11,6 +11,7 @@ export interface IUser extends Document {
   username: string;
   email: string;
   passwordHash: string;
+  authVersion: number;
   avatar?: string;
   headline?: string;
   bio?: string;
@@ -50,6 +51,7 @@ const UserSchema = new Schema<IUser>(
       lowercase: true,
     },
     passwordHash: { type: String, required: true, select: false },
+    authVersion: { type: Number, default: 0, select: false },
     avatar: { type: String, default: "" },
     headline: { type: String, default: "", maxlength: 120 },
     bio: { type: String, default: "", maxlength: 600 },
