@@ -45,7 +45,6 @@ needed to actually ship the project, not just find the team.
   reasons behind it. No AI, no black box.
 - **Join requests** — send, accept, reject, cancel, with duplicate-request prevention.
 - **Developer connections** — send a private contact request with an optional note, accept or decline incoming requests, and manage your network without exposing email addresses.
-- **Password recovery** — request a time-limited email reset link, use it once to set a new password, and invalidate existing sign-in sessions.
 - **Notifications** — join requests, acceptances, rejections, membership changes, task
   assignments, task status changes.
 - **Team workspace** — Overview (real computed progress), Kanban task board, Members
@@ -79,8 +78,7 @@ needed to actually ship the project, not just find the team.
 ```
 app/
   api/                 Route handlers (auth, profile, teams, tasks, requests, contact, notifications, account)
-  (public pages)        /, /about, /discover, /teams, /developers/[username], /teams/[slug],
-                         /signin, /signup, /forgot-password, /reset-password
+  (public pages)        /, /about, /discover, /teams, /developers/[username], /teams/[slug], /signin, /signup
   (authenticated pages)  /dashboard, /profile, /profile/edit, /my-teams, /connections, /teams/create,
                          /teams/[slug]/{manage,workspace,tasks,members,activity,settings},
                          /requests, /notifications, /settings, /onboarding
@@ -236,9 +234,7 @@ npm run test
 1. Push this repository to GitHub.
 2. Import it into Vercel.
 3. Set `MONGODB_URI`, `AUTH_SECRET`, and `NEXTAUTH_URL` (your production URL) as
-   environment variables in the Vercel project settings. To enable password recovery,
-   also set `APP_URL`, `RESEND_API_KEY`, and `RESEND_FROM_EMAIL`. The sender address
-   must belong to a domain verified with Resend.
+   environment variables in the Vercel project settings.
 4. Deploy. Vercel runs `npm run build`, which includes a full TypeScript check.
 
 ---
@@ -254,10 +250,6 @@ Specifically checked during development:
 - **Authentication** — credentials are verified server-side with bcrypt; passwords are
   hashed with a cost factor of 12 and the `passwordHash` field is `select: false` in
   the schema, so it is never returned by a normal query, let alone to the client.
-- **Password reset** — reset tokens are cryptographically random, stored only as
-  SHA-256 hashes, expire after 60 minutes, and are consumed once. Requests use generic
-  responses to avoid account enumeration and have hourly email/IP rate limits. Resetting
-  a password invalidates prior JWT sessions and sends a notification to the account email.
 - **Session handling** — JWT-based sessions via NextAuth; middleware protects every
   authenticated route server-side (see `middleware.ts`), not just client-side redirects.
 - **Team ownership / membership permissions** — every team-mutating route
@@ -292,8 +284,9 @@ in production.
 - Dialogs currently close on `Escape` and move focus into themselves on open, but do
   not implement a full keyboard focus trap (Tab can still theoretically reach elements
   behind the modal). Worth adding a small focus-trap utility.
-- No password reset email provider is configured in this environment. Set the Resend
-  environment variables above and verify the sender domain to enable delivery.
+- No password reset flow — the spec explicitly said to only build a "Forgot password"
+  UI if the full backend recovery is implemented, and email delivery was out of scope
+  for this environment, so it was left out rather than shipped as a non-functional page.
 - No rate limiting on `/api/auth/register` or the credentials login — worth adding
   before handling real traffic.
 - Notification preferences (per-type opt-out) are not implemented; the Settings →
