@@ -15,7 +15,6 @@ const collaborators = [
 
 export function HomeHero() {
   const reduceMotion = useReducedMotion();
-  const enter = reduceMotion ? {} : { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 } };
 
   return (
     <section className="relative isolate overflow-hidden border-b border-border">
@@ -34,7 +33,12 @@ export function HomeHero() {
       />
 
       <div className="container-page grid min-h-[650px] max-w-[1320px] items-center gap-12 py-16 sm:py-20 lg:grid-cols-[1.02fr_0.98fr] lg:gap-8 lg:py-24">
-        <motion.div {...enter} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="relative z-10 max-w-[670px]">
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="relative z-10 max-w-[670px]"
+        >
           <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-surface/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-accent shadow-card backdrop-blur">
             <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-40" /><span className="relative inline-flex h-2 w-2 rounded-full bg-accent" /></span>
             The network for builders
@@ -77,7 +81,8 @@ export function HomeHero() {
           </svg>
 
           <motion.div
-            {...(reduceMotion ? {} : { initial: { opacity: 0, scale: 0.94, rotate: 1.2 }, animate: { opacity: 1, scale: 1, rotate: 0 } })}
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.94, rotate: 1.2 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
             transition={{ duration: 0.8, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
             whileHover={reduceMotion ? undefined : { y: -5, rotate: -0.35 }}
             className="relative z-10 rounded-[28px] border border-border/90 bg-surface/90 p-3 shadow-[0_30px_100px_hsl(var(--shadow)/0.22)] backdrop-blur-xl sm:p-4"
