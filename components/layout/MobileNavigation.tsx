@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Search, Users, FolderKanban, Bell, MessageCircle, Network, Trophy, Radio } from "lucide-react";
+import { LayoutDashboard, Search, Users, FolderKanban, Bell, MessageCircle, Network, Radio, Code2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -10,7 +10,7 @@ const links = [
   { href: "/feed", label: "Feed", icon: Radio },
   { href: "/discover", label: "Find", icon: Search },
   { href: "/teams", label: "Teams", icon: Users },
-  { href: "/challenges", label: "Build", icon: Trophy },
+  { href: "/coding", label: "Code", icon: Code2 },
   { href: "/my-teams", label: "Mine", icon: FolderKanban },
   { href: "/connections", label: "Connect", icon: Network },
   { href: "/messages", label: "Chat", icon: MessageCircle },

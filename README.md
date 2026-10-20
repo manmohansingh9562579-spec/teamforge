@@ -46,6 +46,7 @@ needed to actually ship the project, not just find the team.
 - **Join requests** — send, accept, reject, cancel, with duplicate-request prevention.
 - **Developer connections** — send a private contact request with an optional note, accept or decline incoming requests, and manage your network without exposing email addresses.
 - **Weekly Build Challenge** — a rotating weekly project prompt, public build submissions with GitHub/demo links, and editable entries for signed-in users. No paid email or AI service is required.
+- **Daily Coding Challenge** — a rotating problem bank with Easy/Medium/Hard filters, seven programming languages, hidden test submissions, and MongoDB-backed solving streaks.
 - **Builder community feed** — public build logs, questions and collaboration calls with secure project links, reactions, comments and comment notifications.
 - **Notifications** — join requests, acceptances, rejections, membership changes, task
   assignments, task status changes.
@@ -205,7 +206,12 @@ SMTP_SECURE=false # true for implicit TLS (usually port 465)
 SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=        # verified sender address, e.g. TeamForge <you@example.com>
+JUDGE0_API_URL=https://ce.judge0.com # optional code runner; use your own Judge0 host if preferred
+JUDGE0_AUTH_TOKEN=                  # optional; keep server-side only
+JUDGE0_AUTH_HEADER=X-Auth-Token      # optional override for an authenticated Judge0 host
 ```
+
+The daily coding page sends submitted source code to the configured Judge0 host for sandboxed compilation and execution. The public CE host is the default and may have its own availability or usage limits.
 
 ## Local development
 

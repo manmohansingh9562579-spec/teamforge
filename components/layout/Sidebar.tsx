@@ -12,6 +12,7 @@ import {
   Network,
   MessageCircle,
   Trophy,
+  Code2,
   Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,8 @@ const links = [
   { href: "/feed", label: "Build feed", icon: Radio },
   { href: "/discover", label: "Discover", icon: Search },
   { href: "/teams", label: "Teams", icon: Users },
-  { href: "/challenges", label: "Build challenge", icon: Trophy },
+  { href: "/coding", label: "Daily coding", icon: Code2 },
+  { href: "/challenges", label: "Weekly build", icon: Trophy },
   { href: "/my-teams", label: "My teams", icon: FolderKanban },
   { href: "/requests", label: "Requests", icon: Inbox },
   { href: "/connections", label: "Connections", icon: Network },

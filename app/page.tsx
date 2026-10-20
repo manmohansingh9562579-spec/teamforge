@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  ArrowRight, ArrowUpRight, Blocks, Compass, GitBranch, HeartHandshake,
+  ArrowRight, ArrowUpRight, Blocks, Code2, Compass, GitBranch, HeartHandshake,
   LockKeyhole, MessageCircle, Radio, Rocket, Sparkles, Trophy, UsersRound,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
@@ -128,7 +128,10 @@ export default function HomePage() {
                   <h2 className="mt-5 max-w-[16ch] text-3xl font-semibold leading-tight tracking-[-0.05em] text-text sm:text-[2.65rem]">A fresh reason to make something every week.</h2>
                   <p className="mt-3 max-w-[56ch] text-sm leading-6 text-muted sm:text-base">Pick a prompt, team up if you like and share what you learned. Small builds count. Progress is the point.</p>
                 </div>
-                <Link href="/challenges" className="group inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-text px-5 text-sm font-semibold text-bg transition-transform hover:-translate-y-0.5">See this week’s challenge <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/challenges" className="group inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-text px-5 text-sm font-semibold text-bg transition-transform hover:-translate-y-0.5">See this week’s challenge <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
+                  <Link href="/coding" className="group inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-5 text-sm font-semibold text-text transition-transform hover:-translate-y-0.5">Try daily coding <Code2 className="h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
+                </div>
               </div>
             </div>
           </Reveal>

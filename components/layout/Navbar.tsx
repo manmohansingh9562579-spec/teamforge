@@ -15,7 +15,7 @@ const links = [
   { href: "/feed", label: "Build feed" },
   { href: "/discover", label: "Discover" },
   { href: "/teams", label: "Teams" },
-  { href: "/challenges", label: "Challenge" },
+  { href: "/coding", label: "Daily code" },
   { href: "/about", label: "How it works" },
 ];
 
