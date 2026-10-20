@@ -6,8 +6,10 @@ import { Task } from "@/models/Task";
 import { Activity } from "@/models/Activity";
 import { Notification } from "@/models/Notification";
 import { ChallengeSubmission } from "@/models/ChallengeSubmission";
+import { FeedPost } from "@/models/FeedPost";
 import { getCurrentSession } from "@/lib/session";
 import { apiOk, apiError, handleApiError } from "@/lib/api";
+import { Types } from "mongoose";
 
 export async function DELETE() {
   try {
@@ -19,6 +21,7 @@ export async function DELETE() {
 
     // Teams the user owns are deleted entirely, along with their data.
     const ownedTeamIds = await Team.find({ ownerId: userId }).distinct("_id");
+    const ownedPostIds = await FeedPost.find({ authorId: userId }).distinct("_id");
     await Promise.all([
       Team.deleteMany({ ownerId: userId }),
       Task.deleteMany({ teamId: { $in: ownedTeamIds } }),
@@ -37,6 +40,20 @@ export async function DELETE() {
       JoinRequest.deleteMany({ senderId: userId }),
       Notification.deleteMany({ userId }),
       ChallengeSubmission.deleteMany({ userId }),
+      FeedPost.deleteMany({ authorId: userId }),
+      Notification.deleteMany({ "relatedEntity.kind": "post", "relatedEntity.id": { $in: ownedPostIds } }),
+      FeedPost.updateMany({ likes: userId }, { $pull: { likes: userId } }),
+      FeedPost.updateMany(
+        { "comments.authorId": userId },
+        [
+          { $set: { comments: { $filter: {
+            input: "$comments",
+            as: "comment",
+            cond: { $ne: ["$$comment.authorId", new Types.ObjectId(userId)] },
+          } } } },
+          { $set: { commentCount: { $size: "$comments" } } },
+        ]
+      ),
       Task.updateMany({ assignee: userId }, { $unset: { assignee: "" } }),
     ]);
 

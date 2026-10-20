@@ -12,11 +12,13 @@ import {
   Network,
   MessageCircle,
   Trophy,
+  Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/feed", label: "Build feed", icon: Radio },
   { href: "/discover", label: "Discover", icon: Search },
   { href: "/teams", label: "Teams", icon: Users },
   { href: "/challenges", label: "Build challenge", icon: Trophy },

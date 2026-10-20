@@ -12,6 +12,7 @@ import { UserMenu } from "./UserMenu";
 import { cn } from "@/lib/utils";
 
 const links = [
+  { href: "/feed", label: "Build feed" },
   { href: "/discover", label: "Discover" },
   { href: "/teams", label: "Teams" },
   { href: "/challenges", label: "Challenge" },

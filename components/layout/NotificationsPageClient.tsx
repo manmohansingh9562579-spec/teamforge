@@ -108,6 +108,19 @@ export function NotificationsPageClient() {
             </>
           );
 
+          if (notification.relatedEntity?.kind === "post") {
+            return (
+              <Link
+                key={notification._id}
+                href="/feed"
+                onClick={() => !notification.isRead && markRead(notification._id)}
+                className={className}
+              >
+                {content}
+              </Link>
+            );
+          }
+
           if (notification.relatedEntity?.kind === "contact") {
             return (
               <Link

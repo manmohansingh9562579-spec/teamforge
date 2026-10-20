@@ -5,6 +5,7 @@ const cols = [
   {
     title: "Product",
     links: [
+      { href: "/feed", label: "Builder community" },
       { href: "/discover", label: "Discover developers" },
       { href: "/teams", label: "Discover teams" },
       { href: "/teams/create", label: "Create a team" },

@@ -70,4 +70,5 @@ export const NOTIFICATION_TYPES = [
   "member_removed",
   "task_assigned",
   "task_status_changed",
+  "feed_comment",
 ] as const;

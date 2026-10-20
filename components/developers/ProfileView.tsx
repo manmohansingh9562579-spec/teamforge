@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Github, Linkedin, Globe, MapPin, GraduationCap, Pencil, BriefcaseBusiness, Sparkles, MessageCircle } from "lucide-react";
+import { Github, Linkedin, Globe, MapPin, GraduationCap, Pencil, BriefcaseBusiness, Sparkles, MessageCircle, ArrowUpRight, Code2 } from "lucide-react";
 import { Types } from "mongoose";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge, SkillBadge } from "@/components/ui/Badge";
@@ -27,6 +27,17 @@ type ProfileDisplayUser = Pick<
   | "portfolioUrl"
 > & { _id: Types.ObjectId | string };
 
+type ProfileActivity = {
+  id: string;
+  type: "build" | "question" | "collaboration";
+  content: string;
+  projectName: string;
+  githubUrl: string;
+  demoUrl: string;
+  skills: string[];
+  createdAt: string;
+};
+
 function safeExternalUrl(value?: string) {
   if (!value) return undefined;
   try {
@@ -40,9 +51,11 @@ function safeExternalUrl(value?: string) {
 export function ProfileView({
   user,
   isOwner = false,
+  recentPosts = [],
 }: {
   user: ProfileDisplayUser;
   isOwner?: boolean;
+  recentPosts?: ProfileActivity[];
 }) {
   const links = [
     { href: safeExternalUrl(user.githubUrl), label: "GitHub", icon: Github },
@@ -144,6 +157,29 @@ export function ProfileView({
         </div>
 
         <div className="space-y-5">
+          {recentPosts.length > 0 && <Card className="p-5 sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold tracking-tight text-text">Builds & community activity</h2>
+                <p className="mt-1 text-xs text-muted">Recent work shared with TeamForge</p>
+              </div>
+              <Link href="/feed" aria-label="Open builder feed" className="flex h-8 w-8 items-center justify-center rounded-lg text-accent hover:bg-accent-soft"><ArrowUpRight className="h-4 w-4" /></Link>
+            </div>
+            <div className="mt-4 space-y-3">
+              {recentPosts.map((post) => <div key={post.id} className="rounded-lg border border-border bg-bg p-3.5">
+                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent"><Code2 className="h-3.5 w-3.5" />{post.type === "build" ? "Build log" : post.type === "question" ? "Question" : "Team-up"}</div>
+                {post.projectName && <p className="mt-2 text-sm font-semibold text-text">{post.projectName}</p>}
+                <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-xs leading-5 text-muted">{post.content}</p>
+                {post.skills.length > 0 && <div className="mt-2.5 flex flex-wrap gap-1">{post.skills.slice(0, 4).map((skill) => <SkillBadge key={skill}>{skill}</SkillBadge>)}</div>}
+                {(post.githubUrl || post.demoUrl) && <div className="mt-3 flex gap-3 text-xs font-medium">
+                  {post.githubUrl && <a href={post.githubUrl} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">GitHub</a>}
+                  {post.demoUrl && <a href={post.demoUrl} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Live demo</a>}
+                </div>}
+              </div>)}
+            </div>
+            <Link href="/feed" className="mt-4 inline-flex text-xs font-medium text-accent hover:underline">Explore the builder feed <ArrowUpRight className="ml-1 h-3.5 w-3.5" /></Link>
+          </Card>}
+
           <Card className="p-5 sm:p-6">
             <div className="flex items-center gap-2">
               <BriefcaseBusiness className="h-4 w-4 text-accent" aria-hidden="true" />

@@ -46,6 +46,7 @@ needed to actually ship the project, not just find the team.
 - **Join requests** — send, accept, reject, cancel, with duplicate-request prevention.
 - **Developer connections** — send a private contact request with an optional note, accept or decline incoming requests, and manage your network without exposing email addresses.
 - **Weekly Build Challenge** — a rotating weekly project prompt, public build submissions with GitHub/demo links, and editable entries for signed-in users. No paid email or AI service is required.
+- **Builder community feed** — public build logs, questions and collaboration calls with secure project links, reactions, comments and comment notifications.
 - **Notifications** — join requests, acceptances, rejections, membership changes, task
   assignments, task status changes.
 - **Team workspace** — Overview (real computed progress), Kanban task board, Members

@@ -10,6 +10,7 @@ import {
   Activity,
   LayoutGrid,
   Trophy,
+  Radio,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -53,6 +54,7 @@ const features = [
   { icon: Bell, title: "Notifications", body: "Know when someone wants to connect, join your team, or help move a task forward." },
   { icon: Activity, title: "Activity timeline", body: "A running record of what changed on your team, and who changed it." },
   { icon: Trophy, title: "Weekly build challenge", body: "Pick up a small prompt, build with others, and share your finished project." },
+  { icon: Radio, title: "Builder community feed", body: "Share what you shipped, get unstuck with peers, and find collaborators around real work." },
 ];
 
 export default function HomePage() {
@@ -75,8 +77,14 @@ export default function HomePage() {
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
-                  href="/discover"
+                  href="/feed"
                   className="inline-flex h-12 items-center justify-center rounded-lg bg-accent px-5 text-sm font-medium text-on-accent shadow-card transition-[background-color,transform] hover:bg-accent-hover active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2"
+                >
+                  Join the builder feed
+                </Link>
+                <Link
+                  href="/discover"
+                  className="inline-flex h-12 items-center justify-center rounded-lg border border-border-strong bg-surface px-5 text-sm font-medium text-text transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2"
                 >
                   Find teammates
                 </Link>
