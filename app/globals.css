@@ -84,6 +84,28 @@ body {
   padding-inline: 20px;
 }
 
+.home-grid {
+  background-image:
+    linear-gradient(to right, hsl(var(--border) / 0.52) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--border) / 0.52) 1px, transparent 1px),
+    radial-gradient(ellipse at 68% 35%, hsl(var(--accent) / 0.09), transparent 58%);
+  background-size: 48px 48px, 48px 48px, auto;
+  mask-image: linear-gradient(to bottom, black, transparent 92%);
+}
+
+.home-marquee-track {
+  animation: home-marquee 42s linear infinite;
+}
+
+@keyframes home-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-marquee-track { animation: none; }
+}
+
 @media (min-width: 640px) {
   .container-page { padding-inline: 32px; }
 }
