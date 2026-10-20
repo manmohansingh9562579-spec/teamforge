@@ -25,6 +25,9 @@ export interface IUser extends Document {
   githubUrl?: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
+  passwordResetTokenHash?: string;
+  passwordResetExpiresAt?: Date;
+  passwordResetRequestedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,6 +67,9 @@ const UserSchema = new Schema<IUser>(
     githubUrl: { type: String, default: "" },
     linkedinUrl: { type: String, default: "" },
     portfolioUrl: { type: String, default: "" },
+    passwordResetTokenHash: { type: String, select: false },
+    passwordResetExpiresAt: { type: Date, select: false },
+    passwordResetRequestedAt: { type: Date, select: false },
   },
   { timestamps: true }
 );

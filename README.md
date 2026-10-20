@@ -49,6 +49,7 @@ needed to actually ship the project, not just find the team.
 - **Builder community feed** — public build logs, questions and collaboration calls with secure project links, reactions, comments and comment notifications.
 - **Notifications** — join requests, acceptances, rejections, membership changes, task
   assignments, task status changes.
+- **Password reset** — single-use, hashed reset tokens expire after 30 minutes; email delivery uses configurable SMTP.
 - **Team workspace** — Overview (real computed progress), Kanban task board, Members
   (with owner controls), Activity timeline, Settings.
 - **Dashboard** — profile completion, my teams, pending requests, task summary,
@@ -197,6 +198,13 @@ See `.env.example`:
 MONGODB_URI=      # your MongoDB Atlas connection string
 AUTH_SECRET=      # random secret — generate with: openssl rand -base64 32
 NEXTAUTH_URL=http://localhost:3000
+APP_URL=http://localhost:3000
+SMTP_HOST=        # SMTP server hostname for password reset mail
+SMTP_PORT=587
+SMTP_SECURE=false # true for implicit TLS (usually port 465)
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=        # verified sender address, e.g. TeamForge <you@example.com>
 ```
 
 ## Local development
@@ -237,7 +245,8 @@ npm run test
 1. Push this repository to GitHub.
 2. Import it into Vercel.
 3. Set `MONGODB_URI`, `AUTH_SECRET`, and `NEXTAUTH_URL` (your production URL) as
-   environment variables in the Vercel project settings.
+   environment variables in the Vercel project settings. For password reset emails,
+   also set `APP_URL` and the `SMTP_*` values for a sender account.
 4. Deploy. Vercel runs `npm run build`, which includes a full TypeScript check.
 
 ---
@@ -287,9 +296,8 @@ in production.
 - Dialogs currently close on `Escape` and move focus into themselves on open, but do
   not implement a full keyboard focus trap (Tab can still theoretically reach elements
   behind the modal). Worth adding a small focus-trap utility.
-- No password reset flow — the spec explicitly said to only build a "Forgot password"
-  UI if the full backend recovery is implemented, and email delivery was out of scope
-  for this environment, so it was left out rather than shipped as a non-functional page.
+- Password reset email delivery requires SMTP environment variables in each deployment
+  environment; the application does not contain or commit sender credentials.
 - No rate limiting on `/api/auth/register` or the credentials login — worth adding
   before handling real traffic.
 - Notification preferences (per-type opt-out) are not implemented; the Settings →
