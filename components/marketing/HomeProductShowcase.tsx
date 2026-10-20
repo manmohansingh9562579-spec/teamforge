@@ -74,7 +74,7 @@ export function HomeProductShowcase() {
             <div className="flex items-center justify-between border-b border-border pb-4"><div className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white"><selected.icon className="h-4 w-4" /></span><div><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">Product preview</p><p className="text-xs font-medium text-text">{selected.label}</p></div></div><span className="font-mono text-[10px] text-muted">teamforge.app</span></div>
             <div className="grid flex-1 gap-6 py-5 sm:grid-cols-[0.8fr_1.2fr] sm:items-center">
               <AnimatePresence mode="wait" initial={false}>
-                <motion.div key={selected.id} initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: reduceMotion ? 0.1 : 0.28 }}>
+                <motion.div key={selected.id} initial={false} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: reduceMotion ? 0.1 : 0.28 }}>
                   <p className="text-xs font-semibold uppercase tracking-[0.13em] text-accent">{selected.label}</p>
                   <h3 className="mt-3 text-2xl font-semibold leading-tight tracking-[-0.04em] text-text">{selected.title}</h3>
                   <p className="mt-3 text-sm leading-6 text-muted">{selected.body}</p>
@@ -82,7 +82,7 @@ export function HomeProductShowcase() {
                 </motion.div>
               </AnimatePresence>
               <AnimatePresence mode="wait" initial={false}>
-                <motion.div key={`${selected.id}-preview`} initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: reduceMotion ? 0.1 : 0.3 }} className="rounded-2xl border border-border bg-surface p-3 shadow-card sm:p-4"><PreviewScreen view={selected} /></motion.div>
+                <motion.div key={`${selected.id}-preview`} initial={false} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: reduceMotion ? 0.1 : 0.3 }} className="rounded-2xl border border-border bg-surface p-3 shadow-card sm:p-4"><PreviewScreen view={selected} /></motion.div>
               </AnimatePresence>
             </div>
             <div className="flex items-center justify-between border-t border-border pt-3 text-[10px] text-muted"><span>Connected by real work</span><span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-success" /> No vanity metrics</span></div>

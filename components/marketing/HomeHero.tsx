@@ -34,7 +34,7 @@ export function HomeHero() {
 
       <div className="container-page grid min-h-[650px] max-w-[1320px] items-center gap-12 py-16 sm:py-20 lg:grid-cols-[1.02fr_0.98fr] lg:gap-8 lg:py-24">
         <motion.div
-          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduceMotion ? 0 : 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-10 max-w-[670px]"
@@ -81,7 +81,7 @@ export function HomeHero() {
           </svg>
 
           <motion.div
-            initial={reduceMotion ? false : { opacity: 0, scale: 0.94, rotate: 1.2 }}
+            initial={false}
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
             transition={{ duration: 0.8, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
             whileHover={reduceMotion ? undefined : { y: -5, rotate: -0.35 }}
