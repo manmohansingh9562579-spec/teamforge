@@ -16,6 +16,7 @@ const links = [
   { href: "/discover", label: "Discover" },
   { href: "/teams", label: "Teams" },
   { href: "/coding", label: "Daily code" },
+  { href: "/logic-data", label: "Logic & Data" },
   { href: "/about", label: "How it works" },
 ];
 

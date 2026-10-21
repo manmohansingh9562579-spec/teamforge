@@ -9,6 +9,7 @@ const cols = [
       { href: "/discover", label: "Discover developers" },
       { href: "/teams", label: "Discover teams" },
       { href: "/teams/create", label: "Create a team" },
+      { href: "/logic-data", label: "Logic & Data" },
       { href: "/coding", label: "Daily Coding Challenge" },
       { href: "/challenges", label: "Weekly Build Challenge" },
     ],

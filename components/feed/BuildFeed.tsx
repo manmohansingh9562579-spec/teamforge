@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import {
-  ArrowDown, ArrowUpRight, Code2, ExternalLink, Github, Heart, Loader2,
+  ArrowDown, ArrowUpRight, Brain, Code2, ExternalLink, Github, Heart, Loader2,
   MessageCircle, Radio, Send, Sparkles, Trash2, Trophy, UsersRound,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -199,6 +199,7 @@ export function BuildFeed() {
               <div className="mt-3 space-y-1">
                 <Link href="/discover" className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm font-medium text-text hover:bg-surface-hover"><UsersRound className="h-4 w-4 text-accent" /> Find a collaborator</Link>
                 <Link href="/teams" className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm font-medium text-text hover:bg-surface-hover"><Code2 className="h-4 w-4 text-accent" /> Explore teams</Link>
+                <Link href="/logic-data" className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm font-medium text-text hover:bg-surface-hover"><Brain className="h-4 w-4 text-accent" /> Logic &amp; Data</Link>
                 <Link href="/challenges" className="flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm font-medium text-text hover:bg-surface-hover"><Trophy className="h-4 w-4 text-accent" /> Weekly challenge</Link>
               </div>
             </Card>
