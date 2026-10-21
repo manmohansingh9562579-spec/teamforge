@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Award, FileText, Plus, Trash2 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Award, FileText, ImagePlus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Label, Input, Textarea, FormError } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { Button } from "@/components/ui/Button";
+import { Avatar } from "@/components/ui/Avatar";
 import {
   SUGGESTED_SKILLS,
   ROLES,
@@ -44,6 +46,45 @@ type AchievementInput = {
   documentUrl: string;
 };
 
+async function optimizeProfilePhoto(file: File): Promise<Blob> {
+  if (!file.type.startsWith("image/")) throw new Error("Choose an image file");
+  if (file.size > 10 * 1024 * 1024) throw new Error("Choose an image smaller than 10 MB");
+
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error("This image could not be opened. Try a JPG, PNG, or WebP file.");
+  }
+
+  try {
+    if (!bitmap.width || !bitmap.height || bitmap.width * bitmap.height > 40_000_000) {
+      throw new Error("This image is too large to process");
+    }
+
+    const scale = Math.min(1, 512 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Could not prepare this image");
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+    const optimized = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/webp", 0.82)
+    );
+    if (!optimized || optimized.type !== "image/webp") {
+      throw new Error("Your browser could not optimize this image");
+    }
+    if (optimized.size > 512 * 1024) {
+      throw new Error("This image is still too large after resizing. Try a simpler photo.");
+    }
+    return optimized;
+  } finally {
+    bitmap.close();
+  }
+}
+
 function toFormState(user: IUser): FormState {
   return {
     name: user.name ?? "",
@@ -73,12 +114,69 @@ function toFormState(user: IUser): FormState {
 
 export function ProfileEditForm({ user }: { user: IUser }) {
   const router = useRouter();
+  const { update: updateSession } = useSession();
   const [form, setForm] = useState<FormState>(toFormState(user));
+  const [avatar, setAvatar] = useState(user.avatar ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [removingPhoto, setRemovingPhoto] = useState(false);
+  const photoInput = useRef<HTMLInputElement>(null);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  const uploadPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+
+    setUploadingPhoto(true);
+    try {
+      const optimized = await optimizeProfilePhoto(file);
+      const body = new FormData();
+      body.append("file", optimized, "profile-photo.webp");
+      const response = await fetch("/api/profile/avatar", { method: "PUT", body });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error ?? "Could not upload photo");
+
+      const nextAvatar = json.data.avatar as string;
+      setAvatar(nextAvatar);
+      try {
+        await updateSession({ image: nextAvatar });
+      } catch {
+        // The saved profile photo is still available after the next session refresh.
+      }
+      router.refresh();
+      toast.success("Profile photo updated");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not upload photo");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    setRemovingPhoto(true);
+    try {
+      const response = await fetch("/api/profile/avatar", { method: "DELETE" });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error ?? "Could not remove photo");
+
+      setAvatar("");
+      try {
+        await updateSession({ image: null });
+      } catch {
+        // The profile and public avatar will use initials even if the session refresh is delayed.
+      }
+      router.refresh();
+      toast.success("Profile photo removed");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not remove photo");
+    } finally {
+      setRemovingPhoto(false);
+    }
+  };
 
   const updateAchievement = (index: number, key: keyof AchievementInput, value: string) => {
     setForm((current) => ({
@@ -134,6 +232,32 @@ export function ProfileEditForm({ user }: { user: IUser }) {
     <form onSubmit={onSubmit} className="max-w-[640px] space-y-6">
       <section className="space-y-4">
         <h2 className="text-[14px] font-medium text-text">Basic information</h2>
+        <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface/50 p-4 sm:flex-row sm:items-center">
+          <Avatar name={form.name || user.name} src={avatar} size="xxl" className="ring-2 ring-accent-soft" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-text">Profile photo</p>
+            <p className="mt-1 text-xs leading-5 text-muted">Shown on your public TeamForge profile. Images are resized before being saved.</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                ref={photoInput}
+                type="file"
+                accept="image/*"
+                onChange={uploadPhoto}
+                className="sr-only"
+                aria-label="Choose a profile photo"
+              />
+              <Button type="button" variant="outline" size="sm" loading={uploadingPhoto} onClick={() => photoInput.current?.click()}>
+                <ImagePlus className="h-4 w-4" /> {uploadingPhoto ? "Uploading" : avatar ? "Change photo" : "Add photo"}
+              </Button>
+              {avatar && (
+                <Button type="button" variant="ghost" size="sm" loading={removingPhoto} disabled={uploadingPhoto} onClick={removePhoto}>
+                  <Trash2 className="h-4 w-4" /> Remove
+                </Button>
+              )}
+            </div>
+            <p className="mt-2 text-[11px] leading-5 text-muted">JPG, PNG, or WebP · up to 10 MB before resizing · saved as WebP up to 512 KB.</p>
+          </div>
+        </div>
         <div>
           <Label htmlFor="name">Full name</Label>
           <Input id="name" value={form.name} onChange={(e) => update("name", e.target.value)} />
