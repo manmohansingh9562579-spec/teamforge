@@ -31,7 +31,14 @@ export function Avatar({
       style={{ width: px, height: px, fontSize: px * 0.38 }}
     >
       {src ? (
-        <Image src={src} alt={name} fill sizes={`${px}px`} className="object-cover" />
+        <Image
+          src={src}
+          alt={name}
+          fill
+          sizes={`${px}px`}
+          className="object-cover"
+          unoptimized={src.startsWith("/api/profile/avatar/")}
+        />
       ) : (
         <span>{initials}</span>
       )}

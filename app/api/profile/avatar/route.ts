@@ -14,7 +14,9 @@ export async function PUT(request: Request) {
 
     const form = await request.formData();
     const file = form.get("file");
-    if (!(file instanceof File)) return apiError("Choose a profile photo to upload", 400);
+    if (!file || typeof file === "string" || typeof file.arrayBuffer !== "function") {
+      return apiError("Choose a profile photo to upload", 400);
+    }
     if (file.type !== "image/webp") {
       return apiError("Could not prepare this photo. Choose an image and try again.", 400);
     }

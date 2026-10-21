@@ -10,8 +10,7 @@ export async function GET(
 
   await connectDB();
   const photo = await ProfilePhoto.findOne({ userId: params.userId })
-    .select("contentType data updatedAt")
-    .lean();
+    .select("contentType data updatedAt");
 
   if (!photo) return new Response("Not found", { status: 404 });
 
