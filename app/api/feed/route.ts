@@ -4,7 +4,6 @@ import { connectDB } from "@/lib/db";
 import { getCurrentSession } from "@/lib/session";
 import { FeedPost, FEED_POST_TYPES } from "@/models/FeedPost";
 import { User } from "@/models/User";
-import { createFeedPostSchema } from "@/validations/feed";
 
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 15;
@@ -117,20 +116,6 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
-  try {
-    const session = await getCurrentSession();
-    if (!session?.user?.id) return apiError("Sign in to share with the community", 401);
-    const data = createFeedPostSchema.parse(await request.json());
-    await connectDB();
-
-    const post = await FeedPost.create({
-      authorId: session.user.id,
-      ...data,
-      skills: [...new Set(data.skills.map((skill) => skill.trim()).filter(Boolean))],
-    });
-    return apiOk({ id: post._id.toString() }, 201);
-  } catch (error) {
-    return handleApiError(error);
-  }
+export async function POST() {
+  return apiError("Posting is temporarily paused. Add milestones to your developer profile instead.", 403);
 }

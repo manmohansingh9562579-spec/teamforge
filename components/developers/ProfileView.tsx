@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Github, Linkedin, Globe, MapPin, GraduationCap, Pencil, BriefcaseBusiness, Sparkles, MessageCircle, ArrowUpRight, Code2 } from "lucide-react";
+import { Github, Linkedin, Globe, MapPin, GraduationCap, Pencil, BriefcaseBusiness, Sparkles, MessageCircle, ArrowUpRight, Code2, Award, FileText, ExternalLink } from "lucide-react";
 import { Types } from "mongoose";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge, SkillBadge } from "@/components/ui/Badge";
@@ -25,18 +25,8 @@ type ProfileDisplayUser = Pick<
   | "githubUrl"
   | "linkedinUrl"
   | "portfolioUrl"
+  | "achievements"
 > & { _id: Types.ObjectId | string };
-
-type ProfileActivity = {
-  id: string;
-  type: "build" | "question" | "collaboration";
-  content: string;
-  projectName: string;
-  githubUrl: string;
-  demoUrl: string;
-  skills: string[];
-  createdAt: string;
-};
 
 function safeExternalUrl(value?: string) {
   if (!value) return undefined;
@@ -51,11 +41,11 @@ function safeExternalUrl(value?: string) {
 export function ProfileView({
   user,
   isOwner = false,
-  recentPosts = [],
+  solvedCount = 0,
 }: {
   user: ProfileDisplayUser;
   isOwner?: boolean;
-  recentPosts?: ProfileActivity[];
+  solvedCount?: number;
 }) {
   const links = [
     { href: safeExternalUrl(user.githubUrl), label: "GitHub", icon: Github },
@@ -135,6 +125,25 @@ export function ProfileView({
         )}
       </Card>
 
+      <section className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]" aria-label="Coder highlights">
+        <Card className="flex items-center gap-4 p-5 sm:p-6">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Code2 className="h-5 w-5" /></div>
+          <div>
+            <p className="text-xs font-medium text-muted">TeamForge problems solved</p>
+            <p className="mt-0.5 text-3xl font-semibold tracking-tight text-text">{solvedCount}</p>
+          </div>
+          <Link href="/coding" className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">Practice <ArrowUpRight className="h-3.5 w-3.5" /></Link>
+        </Card>
+        <Card className="flex items-center gap-4 p-5 sm:p-6">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500"><Award className="h-5 w-5" /></div>
+          <div>
+            <p className="text-xs font-medium text-muted">Achievements shared</p>
+            <p className="mt-0.5 text-3xl font-semibold tracking-tight text-text">{user.achievements?.length ?? 0}</p>
+          </div>
+          {isOwner && <Link href="/profile/edit#achievements" className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">Add achievement <ArrowUpRight className="h-3.5 w-3.5" /></Link>}
+        </Card>
+      </section>
+
       <div className="mt-5 grid gap-5 md:grid-cols-[1.25fr_0.75fr]">
         <div className="space-y-5">
           {user.bio && (
@@ -143,6 +152,44 @@ export function ProfileView({
               <p className="mt-3 whitespace-pre-line text-sm leading-7 text-muted">{user.bio}</p>
             </Card>
           )}
+
+          <Card id="achievements" className="p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2"><Award className="h-4 w-4 text-amber-500" /><h2 className="text-base font-semibold tracking-tight text-text">Achievements & credentials</h2></div>
+                <p className="mt-1 text-xs text-muted">Awards, certificates, and competition results shared by this developer.</p>
+              </div>
+              {isOwner && <Link href="/profile/edit#achievements" className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"><Pencil className="h-3.5 w-3.5" /> Manage</Link>}
+            </div>
+            {user.achievements?.length ? (
+              <div className="mt-5 space-y-3">
+                {user.achievements.map((achievement, index) => {
+                  const referenceLink = safeExternalUrl(achievement.link);
+                  const documentLink = safeExternalUrl(achievement.documentUrl);
+                  return <article key={`${achievement.title}-${index}`} className="rounded-xl border border-border bg-bg p-4">
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500"><Award className="h-4 w-4" /></span>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-sm font-semibold text-text">{achievement.title}</h3>
+                        {(achievement.issuer || achievement.date) && <p className="mt-1 text-xs text-muted">{[achievement.issuer, achievement.date].filter(Boolean).join(" · ")}</p>}
+                        {achievement.description && <p className="mt-2 whitespace-pre-line text-sm leading-6 text-muted">{achievement.description}</p>}
+                        {(referenceLink || documentLink) && <div className="mt-3 flex flex-wrap gap-2">
+                          {referenceLink && <a href={referenceLink} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-text hover:bg-surface-hover"><ExternalLink className="h-3.5 w-3.5 text-accent" /> Achievement link</a>}
+                          {documentLink && <a href={documentLink} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-text hover:bg-surface-hover"><FileText className="h-3.5 w-3.5 text-accent" /> View document</a>}
+                        </div>}
+                      </div>
+                    </div>
+                  </article>;
+                })}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-xl border border-dashed border-border px-4 py-6 text-center">
+                <p className="text-sm font-medium text-text">No achievements added yet</p>
+                <p className="mt-1 text-xs text-muted">Certificates and project milestones will appear here.</p>
+                {isOwner && <Link href="/profile/edit#achievements" className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">Add your first achievement <ArrowUpRight className="h-3.5 w-3.5" /></Link>}
+              </div>
+            )}
+          </Card>
 
           <Card className="p-5 sm:p-6">
             <h2 className="text-base font-semibold tracking-tight text-text">Skills</h2>
@@ -157,29 +204,6 @@ export function ProfileView({
         </div>
 
         <div className="space-y-5">
-          {recentPosts.length > 0 && <Card className="p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold tracking-tight text-text">Builds & community activity</h2>
-                <p className="mt-1 text-xs text-muted">Recent work shared with TeamForge</p>
-              </div>
-              <Link href="/feed" aria-label="Open builder feed" className="flex h-8 w-8 items-center justify-center rounded-lg text-accent hover:bg-accent-soft"><ArrowUpRight className="h-4 w-4" /></Link>
-            </div>
-            <div className="mt-4 space-y-3">
-              {recentPosts.map((post) => <div key={post.id} className="rounded-lg border border-border bg-bg p-3.5">
-                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent"><Code2 className="h-3.5 w-3.5" />{post.type === "build" ? "Build log" : post.type === "question" ? "Question" : "Team-up"}</div>
-                {post.projectName && <p className="mt-2 text-sm font-semibold text-text">{post.projectName}</p>}
-                <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-xs leading-5 text-muted">{post.content}</p>
-                {post.skills.length > 0 && <div className="mt-2.5 flex flex-wrap gap-1">{post.skills.slice(0, 4).map((skill) => <SkillBadge key={skill}>{skill}</SkillBadge>)}</div>}
-                {(post.githubUrl || post.demoUrl) && <div className="mt-3 flex gap-3 text-xs font-medium">
-                  {post.githubUrl && <a href={post.githubUrl} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">GitHub</a>}
-                  {post.demoUrl && <a href={post.demoUrl} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Live demo</a>}
-                </div>}
-              </div>)}
-            </div>
-            <Link href="/feed" className="mt-4 inline-flex text-xs font-medium text-accent hover:underline">Explore the builder feed <ArrowUpRight className="ml-1 h-3.5 w-3.5" /></Link>
-          </Card>}
-
           <Card className="p-5 sm:p-6">
             <div className="flex items-center gap-2">
               <BriefcaseBusiness className="h-4 w-4 text-accent" aria-hidden="true" />

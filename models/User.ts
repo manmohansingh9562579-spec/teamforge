@@ -25,12 +25,32 @@ export interface IUser extends Document {
   githubUrl?: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
+  achievements: {
+    title: string;
+    issuer: string;
+    date: string;
+    description: string;
+    link: string;
+    documentUrl: string;
+  }[];
   passwordResetTokenHash?: string;
   passwordResetExpiresAt?: Date;
   passwordResetRequestedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const AchievementSchema = new Schema(
+  {
+    title: { type: String, required: true, trim: true, maxlength: 100 },
+    issuer: { type: String, default: "", trim: true, maxlength: 100 },
+    date: { type: String, default: "", trim: true, maxlength: 30 },
+    description: { type: String, default: "", trim: true, maxlength: 400 },
+    link: { type: String, default: "", trim: true, maxlength: 500 },
+    documentUrl: { type: String, default: "", trim: true, maxlength: 500 },
+  },
+  { _id: false }
+);
 
 const UserSchema = new Schema<IUser>(
   {
@@ -67,6 +87,7 @@ const UserSchema = new Schema<IUser>(
     githubUrl: { type: String, default: "" },
     linkedinUrl: { type: String, default: "" },
     portfolioUrl: { type: String, default: "" },
+    achievements: { type: [AchievementSchema], default: [] },
     passwordResetTokenHash: { type: String, select: false },
     passwordResetExpiresAt: { type: Date, select: false },
     passwordResetRequestedAt: { type: Date, select: false },

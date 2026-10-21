@@ -2,6 +2,11 @@ import { z } from "zod";
 import { EXPERIENCE_LEVELS, AVAILABILITY, INTERESTS, ROLES } from "@/lib/constants";
 import type { IUser } from "@/models/User";
 
+const optionalHttpUrl = z.union([
+  z.string().trim().url().max(500).refine((value) => /^https?:\/\//i.test(value), "Use an http or https link"),
+  z.literal(""),
+]).optional().default("");
+
 export const profileSchema = z.object({
   name: z.string().trim().min(2).max(80),
   headline: z.string().trim().max(120).optional().default(""),
@@ -17,6 +22,14 @@ export const profileSchema = z.object({
   githubUrl: z.string().trim().url().optional().or(z.literal("")),
   linkedinUrl: z.string().trim().url().optional().or(z.literal("")),
   portfolioUrl: z.string().trim().url().optional().or(z.literal("")),
+  achievements: z.array(z.object({
+    title: z.string().trim().min(2).max(100),
+    issuer: z.string().trim().max(100).optional().default(""),
+    date: z.string().trim().max(30).optional().default(""),
+    description: z.string().trim().max(400).optional().default(""),
+    link: optionalHttpUrl,
+    documentUrl: optionalHttpUrl,
+  })).max(10).optional().default([]),
 });
 
 export type ProfileInput = z.infer<typeof profileSchema>;

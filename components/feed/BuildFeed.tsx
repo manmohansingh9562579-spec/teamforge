@@ -5,8 +5,7 @@ import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import {
   ArrowDown, ArrowUpRight, Code2, ExternalLink, Github, Heart, Loader2,
-  MessageCircle, Plus, Radio, Send, Sparkles, Trash2, Trophy,
-  UsersRound, X,
+  MessageCircle, Radio, Send, Sparkles, Trash2, Trophy, UsersRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
@@ -31,11 +30,6 @@ const filters: { value: "all" | PostType; label: string; icon: typeof Radio }[] 
   { value: "build", label: "Builds", icon: Code2 },
   { value: "question", label: "Questions", icon: MessageCircle },
   { value: "collaboration", label: "Team-ups", icon: UsersRound },
-];
-const composerChoices: { value: PostType; title: string; note: string; icon: typeof Code2 }[] = [
-  { value: "build", title: "Show a build", note: "Share progress or a launch", icon: Code2 },
-  { value: "question", title: "Ask the community", note: "Get unstuck together", icon: MessageCircle },
-  { value: "collaboration", title: "Find collaborators", note: "Meet people for your idea", icon: UsersRound },
 ];
 const postTypeCopy: Record<PostType, { label: string; tone: "accent" | "warning" | "success"; verb: string }> = {
   build: { label: "BUILD LOG", tone: "accent", verb: "shared a build" },
@@ -67,14 +61,6 @@ export function BuildFeed() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
-  const [composerOpen, setComposerOpen] = useState(false);
-  const [composerType, setComposerType] = useState<PostType>("build");
-  const [content, setContent] = useState("");
-  const [projectName, setProjectName] = useState("");
-  const [githubUrl, setGithubUrl] = useState("");
-  const [demoUrl, setDemoUrl] = useState("");
-  const [skillsText, setSkillsText] = useState("");
-  const [posting, setPosting] = useState(false);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [commentOpen, setCommentOpen] = useState<Record<string, boolean>>({});
   const [commentLoading, setCommentLoading] = useState<Record<string, boolean>>({});
@@ -106,33 +92,6 @@ export function BuildFeed() {
   }, [filter]);
 
   useEffect(() => { void loadFeed(); }, [loadFeed]);
-
-  const resetComposer = () => {
-    setContent(""); setProjectName(""); setGithubUrl(""); setDemoUrl(""); setSkillsText("");
-    setComposerOpen(false); setComposerType("build");
-  };
-
-  const submitPost = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (status !== "authenticated") { void signIn(undefined, { callbackUrl: "/feed" }); return; }
-    setPosting(true);
-    try {
-      const response = await fetch("/api/feed", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: composerType, content, projectName, githubUrl, demoUrl,
-          skills: skillsText.split(",").map((skill) => skill.trim()).filter(Boolean).slice(0, 5),
-        }),
-      });
-      const json = await response.json();
-      if (!response.ok) throw new Error(readError(json, "Could not share your post"));
-      toast.success("Shared with the builder community");
-      resetComposer();
-      await loadFeed();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not share your post");
-    } finally { setPosting(false); }
-  };
 
   const toggleLike = async (id: string) => {
     if (status !== "authenticated") { void signIn(undefined, { callbackUrl: "/feed" }); return; }
@@ -244,47 +203,16 @@ export function BuildFeed() {
               </div>
             </Card>
 
-            <p className="px-2 text-[11px] leading-5 text-muted">A thoughtful community starts with useful posts, respectful feedback and real project links.</p>
+            <p className="px-2 text-[11px] leading-5 text-muted">Build a coder profile with problem-solving stats, achievements, and proof-of-work links.</p>
           </aside>
 
           <section className="min-w-0 space-y-4">
-            <Card className="overflow-hidden">
-              <div className="p-4 sm:p-5">
-                <div className="flex items-center gap-3">
-                  <Avatar name={viewer?.name ?? "Builder"} src={viewer?.avatar} size="md" />
-                  <button type="button" onClick={() => status === "authenticated" ? setComposerOpen((value) => !value) : void signIn(undefined, { callbackUrl: "/feed" })} className="flex h-11 flex-1 items-center rounded-full border border-border bg-bg px-4 text-left text-sm text-muted transition-colors hover:border-border-strong hover:bg-surface-hover">What are you building right now?</button>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-                  {composerChoices.map((choice) => <button key={choice.value} type="button" onClick={() => { if (status !== "authenticated") { void signIn(undefined, { callbackUrl: "/feed" }); return; } setComposerType(choice.value); setComposerOpen(true); }} className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-medium text-muted transition-colors hover:bg-surface-hover hover:text-text"><choice.icon className="h-4 w-4 text-accent" />{choice.title}</button>)}
-                </div>
+            <Card className="flex flex-col gap-3 border-accent/20 bg-accent-soft/30 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div>
+                <p className="text-sm font-semibold text-text">Posting is paused for now</p>
+                <p className="mt-1 text-xs leading-5 text-muted">Show your coding record and achievements on your developer profile instead.</p>
               </div>
-              {composerOpen && <form onSubmit={submitPost} className="border-t border-border bg-surface/50 p-4 sm:p-5">
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-text">Share with the builder community</p>
-                    <p className="mt-1 text-xs text-muted">Give people enough detail to learn, help or join in.</p>
-                  </div>
-                  <button type="button" aria-label="Close composer" onClick={resetComposer} className="rounded-md p-1.5 text-muted hover:bg-surface-hover hover:text-text"><X className="h-4 w-4" /></button>
-                </div>
-                <div className="mb-4 grid gap-2 sm:grid-cols-3">
-                  {composerChoices.map((choice) => <button key={choice.value} type="button" onClick={() => setComposerType(choice.value)} className={cn("flex items-start gap-2 rounded-lg border p-3 text-left transition-colors", composerType === choice.value ? "border-accent/40 bg-accent-soft/50" : "border-border bg-surface hover:bg-surface-hover")}>
-                    <choice.icon className={cn("mt-0.5 h-4 w-4 shrink-0", composerType === choice.value ? "text-accent" : "text-muted")} />
-                    <span><span className="block text-xs font-semibold text-text">{choice.title}</span><span className="mt-1 block text-[10px] text-muted">{choice.note}</span></span>
-                  </button>)}
-                </div>
-                <textarea value={content} onChange={(event) => setContent(event.target.value)} maxLength={2000} required rows={4} placeholder={composerType === "build" ? "What did you ship? What was hard? What would you improve next?" : composerType === "question" ? "Share the context, what you tried, and where you are stuck…" : "Describe your idea, the skills you need, and how people can help…"} className="w-full resize-y rounded-xl border border-border bg-bg px-4 py-3 text-sm leading-6 text-text placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15" />
-                {composerType === "build" && <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <input value={projectName} onChange={(event) => setProjectName(event.target.value)} maxLength={100} required placeholder="Project name" className="h-10 rounded-lg border border-border bg-bg px-3 text-sm text-text placeholder:text-muted focus:border-accent focus:outline-none" />
-                  <input value={skillsText} onChange={(event) => setSkillsText(event.target.value)} placeholder="Tech / skills, comma separated (up to 5)" className="h-10 rounded-lg border border-border bg-bg px-3 text-sm text-text placeholder:text-muted focus:border-accent focus:outline-none" />
-                  <input value={githubUrl} onChange={(event) => setGithubUrl(event.target.value)} type="url" placeholder="https://github.com/… (optional)" className="h-10 rounded-lg border border-border bg-bg px-3 text-sm text-text placeholder:text-muted focus:border-accent focus:outline-none" />
-                  <input value={demoUrl} onChange={(event) => setDemoUrl(event.target.value)} type="url" placeholder="https://your-demo.com (optional)" className="h-10 rounded-lg border border-border bg-bg px-3 text-sm text-text placeholder:text-muted focus:border-accent focus:outline-none" />
-                </div>}
-                {composerType !== "build" && <div className="mt-3"><input value={skillsText} onChange={(event) => setSkillsText(event.target.value)} placeholder="Skills or tech involved, comma separated (optional)" className="h-10 w-full rounded-lg border border-border bg-bg px-3 text-sm text-text placeholder:text-muted focus:border-accent focus:outline-none" /></div>}
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <span className="text-[11px] text-muted">{content.length}/2000 · Links must use https://</span>
-                  <Button type="submit" loading={posting}><Send className="h-3.5 w-3.5" /> Publish post</Button>
-                </div>
-              </form>}
+              <Link href={viewer ? "/profile/edit#achievements" : "/signin"} className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-accent px-3.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-hover">Update coder profile <ArrowUpRight className="h-3.5 w-3.5" /></Link>
             </Card>
 
             <div className="flex items-center justify-between gap-3">
@@ -301,9 +229,9 @@ export function BuildFeed() {
               <Button variant="secondary" className="mt-4" onClick={() => void loadFeed()}>Try again</Button>
             </Card> : posts.length === 0 ? <Card className="p-8 text-center sm:p-12">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-soft text-accent"><Code2 className="h-6 w-6" /></div>
-              <h2 className="mt-4 text-lg font-semibold text-text">Start the builder conversation</h2>
-              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted">Share a project update, ask a useful question or post the skills you need. Your next collaborator could be reading.</p>
-              {status === "authenticated" ? <Button className="mt-5" onClick={() => setComposerOpen(true)}><Plus className="h-4 w-4" /> Create the first post</Button> : <Button className="mt-5" onClick={() => void signIn(undefined, { callbackUrl: "/feed" })}>Sign in to start</Button>}
+              <h2 className="mt-4 text-lg font-semibold text-text">No community updates yet</h2>
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted">Keep building your coding record. Your solved problem count, achievements, and document links live on your developer profile.</p>
+              <Link href={viewer ? "/profile" : "/signin"} className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-text transition-colors hover:bg-surface-hover">Open coder profile <ArrowUpRight className="h-4 w-4" /></Link>
             </Card> : <div className="space-y-4">
               {posts.map((post) => {
                 const type = postTypeCopy[post.type];
@@ -367,7 +295,7 @@ export function BuildFeed() {
                 </Card>;
               })}
               {cursor && <div className="flex justify-center py-2"><Button variant="secondary" loading={loadingMore} onClick={() => void loadFeed(true)}><ArrowDown className="h-4 w-4" /> Load more posts</Button></div>}
-              {!cursor && <p className="py-5 text-center text-xs text-muted">You are all caught up. Go build something worth sharing.</p>}
+              {!cursor && <p className="py-5 text-center text-xs text-muted">You are all caught up. Keep your coder profile current.</p>}
             </div>}
           </section>
 
@@ -387,7 +315,7 @@ export function BuildFeed() {
               <p className="mt-1 text-[11px] text-muted">Tools builders are talking about</p>
               {popularSkills.length ? <div className="mt-4 space-y-2.5">{popularSkills.map((skill, index) => <div key={skill.name} className="flex items-center justify-between gap-3">
                 <Link href={`/discover?skill=${encodeURIComponent(skill.name)}`} className="flex min-w-0 items-center gap-2 text-xs font-medium text-text hover:text-accent"><span className="font-mono text-[10px] text-muted">0{index + 1}</span><span className="truncate">{skill.name}</span></Link><span className="shrink-0 text-[10px] text-muted">{skill.posts} posts</span>
-              </div>)}</div> : <div className="mt-4 rounded-lg bg-surface-hover/60 p-3"><p className="text-xs leading-5 text-muted">Add tech tags to your next post and they will show up here.</p></div>}
+              </div>)}</div> : <div className="mt-4 rounded-lg bg-surface-hover/60 p-3"><p className="text-xs leading-5 text-muted">No developer skill signals are available yet.</p></div>}
               <Link href="/discover" className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">Browse developer skills <ArrowUpRight className="h-3.5 w-3.5" /></Link>
             </Card>
 

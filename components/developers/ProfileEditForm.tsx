@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Award, FileText, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Label, Input, Textarea, FormError } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -31,6 +32,16 @@ type FormState = {
   githubUrl: string;
   linkedinUrl: string;
   portfolioUrl: string;
+  achievements: AchievementInput[];
+};
+
+type AchievementInput = {
+  title: string;
+  issuer: string;
+  date: string;
+  description: string;
+  link: string;
+  documentUrl: string;
 };
 
 function toFormState(user: IUser): FormState {
@@ -49,6 +60,14 @@ function toFormState(user: IUser): FormState {
     githubUrl: user.githubUrl ?? "",
     linkedinUrl: user.linkedinUrl ?? "",
     portfolioUrl: user.portfolioUrl ?? "",
+    achievements: (user.achievements ?? []).map((achievement) => ({
+      title: achievement.title ?? "",
+      issuer: achievement.issuer ?? "",
+      date: achievement.date ?? "",
+      description: achievement.description ?? "",
+      link: achievement.link ?? "",
+      documentUrl: achievement.documentUrl ?? "",
+    })),
   };
 }
 
@@ -61,6 +80,22 @@ export function ProfileEditForm({ user }: { user: IUser }) {
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
+  const updateAchievement = (index: number, key: keyof AchievementInput, value: string) => {
+    setForm((current) => ({
+      ...current,
+      achievements: current.achievements.map((achievement, itemIndex) =>
+        itemIndex === index ? { ...achievement, [key]: value } : achievement
+      ),
+    }));
+  };
+
+  const addAchievement = () => {
+    if (form.achievements.length >= 10) return;
+    update("achievements", [...form.achievements, {
+      title: "", issuer: "", date: "", description: "", link: "", documentUrl: "",
+    }]);
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -72,6 +107,7 @@ export function ProfileEditForm({ user }: { user: IUser }) {
         body: JSON.stringify({
           ...form,
           graduationYear: form.graduationYear ? Number(form.graduationYear) : undefined,
+          experienceLevel: form.experienceLevel || undefined,
         }),
       });
       const json = await res.json();
@@ -284,6 +320,74 @@ export function ProfileEditForm({ user }: { user: IUser }) {
           />
           <FormError>{errors.portfolioUrl}</FormError>
         </div>
+      </section>
+
+      <section id="achievements" className="space-y-4 border-t border-border pt-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[14px] font-medium text-text">Achievements & certificates</h2>
+            <p className="mt-1 text-xs leading-5 text-muted">Show awards, contest results, certifications, or shipped milestones on your coder profile.</p>
+          </div>
+          <button
+            type="button"
+            onClick={addAchievement}
+            disabled={form.achievements.length >= 10}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-medium text-text transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add achievement
+          </button>
+        </div>
+
+        {form.achievements.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border p-5 text-center">
+            <Award className="mx-auto h-5 w-5 text-accent" />
+            <p className="mt-2 text-sm font-medium text-text">Your work deserves proof</p>
+            <p className="mt-1 text-xs text-muted">Add a certificate, competition result, or milestone with a supporting link or document.</p>
+          </div>
+        ) : form.achievements.map((achievement, index) => (
+          <div key={`achievement-${index}`} className="space-y-3 rounded-xl border border-border bg-surface/50 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold text-text"><Award className="h-4 w-4 text-accent" /> Achievement {index + 1}</span>
+              <button
+                type="button"
+                aria-label={`Remove achievement ${index + 1}`}
+                onClick={() => update("achievements", form.achievements.filter((_, itemIndex) => itemIndex !== index))}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted transition-colors hover:bg-danger/10 hover:text-danger"
+              ><Trash2 className="h-4 w-4" /></button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor={`achievement-title-${index}`}>Achievement title</Label>
+                <Input id={`achievement-title-${index}`} required minLength={2} maxLength={100} value={achievement.title} onChange={(event) => updateAchievement(index, "title", event.target.value)} placeholder="Top 10 — Hackathon name" />
+              </div>
+              <div>
+                <Label htmlFor={`achievement-issuer-${index}`}>Organization / issuer</Label>
+                <Input id={`achievement-issuer-${index}`} maxLength={100} value={achievement.issuer} onChange={(event) => updateAchievement(index, "issuer", event.target.value)} placeholder="Organizer, university, or platform" />
+              </div>
+              <div>
+                <Label htmlFor={`achievement-date-${index}`}>Date</Label>
+                <Input id={`achievement-date-${index}`} maxLength={30} value={achievement.date} onChange={(event) => updateAchievement(index, "date", event.target.value)} placeholder="e.g. Sep 2026" />
+              </div>
+              <div>
+                <Label htmlFor={`achievement-link-${index}`}>Reference link</Label>
+                <Input id={`achievement-link-${index}`} type="url" value={achievement.link} onChange={(event) => updateAchievement(index, "link", event.target.value)} placeholder="https://…" />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor={`achievement-description-${index}`}>What did you achieve?</Label>
+              <Textarea id={`achievement-description-${index}`} rows={2} maxLength={400} value={achievement.description} onChange={(event) => updateAchievement(index, "description", event.target.value)} placeholder="Add a short detail that helps people understand the achievement." />
+            </div>
+            <div>
+              <Label htmlFor={`achievement-document-${index}`}>Certificate / document link</Label>
+              <div className="relative">
+                <FileText className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted" />
+                <Input id={`achievement-document-${index}`} className="pl-9" type="url" value={achievement.documentUrl} onChange={(event) => updateAchievement(index, "documentUrl", event.target.value)} placeholder="Public PDF or shared Drive / OneDrive link" />
+              </div>
+              <p className="mt-1 text-[11px] leading-5 text-muted">Use a public or shareable document link. Anyone viewing your profile can open it.</p>
+            </div>
+          </div>
+        ))}
+        <FormError>{errors.achievements}</FormError>
       </section>
 
       <div className="flex items-center gap-3 border-t border-border pt-6">
