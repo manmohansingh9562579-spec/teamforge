@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
@@ -16,15 +17,19 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import {
-  LOGIC_DATA_CHALLENGES,
-  type LogicDataDifficulty,
-  type LogicDataTrack,
-} from "@/lib/logicDataChallenges";
+import type { LogicDataChallenge, LogicDataDifficulty, LogicDataTrack } from "@/lib/logicDataChallenges";
 
 type TrackFilter = "All" | LogicDataTrack;
 type DifficultyFilter = "All" | LogicDataDifficulty;
 type AnswerState = "correct" | "incorrect" | null;
+type PublicChallenge = Omit<LogicDataChallenge, "answerId" | "explanation">;
+type AccountStats = {
+  solvedCount: number;
+  totalAttempts: number;
+  correctAttempts: number;
+  currentStreak: number;
+  bestStreak: number;
+};
 
 const progressKey = "teamforge-logic-data-solved-v1";
 const tracks: TrackFilter[] = ["All", "Data", "Math", "Logic"];
@@ -43,15 +48,24 @@ function TrackIcon({ track, className }: { track: LogicDataTrack; className?: st
   return <Brain className={className} />;
 }
 
-export function LogicDataClient() {
+export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] }) {
   const [trackFilter, setTrackFilter] = useState<TrackFilter>("All");
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>("All");
-  const [selectedId, setSelectedId] = useState(LOGIC_DATA_CHALLENGES[0].id);
+  const [selectedId, setSelectedId] = useState(challenges[0]?.id ?? "");
   const [selectedOption, setSelectedOption] = useState("");
   const [answerState, setAnswerState] = useState<AnswerState>(null);
+  const [answerExplanation, setAnswerExplanation] = useState("");
+  const [answerError, setAnswerError] = useState("");
+  const [isChecking, setIsChecking] = useState(false);
   const [showHint, setShowHint] = useState(false);
-  const [solvedIds, setSolvedIds] = useState<string[]>([]);
+  const [browserSolvedIds, setBrowserSolvedIds] = useState<string[]>([]);
+  const [accountSolvedIds, setAccountSolvedIds] = useState<string[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [accountStats, setAccountStats] = useState<AccountStats | null>(null);
   const [progressLoaded, setProgressLoaded] = useState(false);
+  const solvedIds = isAuthenticated
+    ? [...new Set([...accountSolvedIds, ...browserSolvedIds])]
+    : browserSolvedIds;
 
   useEffect(() => {
     try {
@@ -60,9 +74,9 @@ export function LogicDataClient() {
         const parsed: unknown = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           const validIds = parsed.filter((id): id is string =>
-            typeof id === "string" && LOGIC_DATA_CHALLENGES.some((challenge) => challenge.id === id)
+            typeof id === "string" && challenges.some((challenge) => challenge.id === id)
           );
-          setSolvedIds([...new Set(validIds)]);
+          setBrowserSolvedIds([...new Set(validIds)]);
         }
       }
     } catch {
@@ -70,53 +84,119 @@ export function LogicDataClient() {
     } finally {
       setProgressLoaded(true);
     }
-  }, []);
+  }, [challenges]);
 
   useEffect(() => {
     if (!progressLoaded) return;
     try {
-      window.localStorage.setItem(progressKey, JSON.stringify(solvedIds));
+      window.localStorage.setItem(progressKey, JSON.stringify(browserSolvedIds));
     } catch {
       // Progress remains available for the current visit if storage is full or blocked.
     }
-  }, [progressLoaded, solvedIds]);
+  }, [browserSolvedIds, progressLoaded]);
 
-  const filteredChallenges = useMemo(() => LOGIC_DATA_CHALLENGES.filter((challenge) =>
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/logic-data/progress", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok || !payload.ok || cancelled) return;
+        setIsAuthenticated(Boolean(payload.data.authenticated));
+        if (payload.data.authenticated) {
+          setAccountSolvedIds(payload.data.solvedIds);
+          setAccountStats(payload.data.stats);
+        }
+      })
+      .catch(() => {
+        // Browser progress remains available if the account progress service is unavailable.
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const filteredChallenges = useMemo(() => challenges.filter((challenge) =>
     (trackFilter === "All" || challenge.track === trackFilter)
       && (difficultyFilter === "All" || challenge.difficulty === difficultyFilter)
-  ), [difficultyFilter, trackFilter]);
+  ), [challenges, difficultyFilter, trackFilter]);
 
   const selectedChallenge = filteredChallenges.find((challenge) => challenge.id === selectedId)
     ?? filteredChallenges[0]
-    ?? LOGIC_DATA_CHALLENGES[0];
+    ?? challenges[0];
+
+  if (!selectedChallenge) {
+    return <div className="container-page py-16 text-sm text-muted">No practice prompts are available right now.</div>;
+  }
 
   function chooseChallenge(id: string) {
     setSelectedId(id);
     setSelectedOption("");
     setAnswerState(null);
+    setAnswerExplanation("");
+    setAnswerError("");
     setShowHint(false);
   }
 
   function chooseTrack(track: TrackFilter) {
-    setTrackFilter(track);
+    const nextTrack = trackFilter === track ? "All" : track;
+    setTrackFilter(nextTrack);
+    const nextChallenge = challenges.find((challenge) =>
+      (nextTrack === "All" || challenge.track === nextTrack)
+        && (difficultyFilter === "All" || challenge.difficulty === difficultyFilter)
+    );
+    if (nextChallenge) setSelectedId(nextChallenge.id);
     setSelectedOption("");
     setAnswerState(null);
+    setAnswerExplanation("");
+    setAnswerError("");
     setShowHint(false);
   }
 
   function chooseDifficulty(difficulty: DifficultyFilter) {
     setDifficultyFilter(difficulty);
+    const nextChallenge = challenges.find((challenge) =>
+      (trackFilter === "All" || challenge.track === trackFilter)
+        && (difficulty === "All" || challenge.difficulty === difficulty)
+    );
+    if (nextChallenge) setSelectedId(nextChallenge.id);
     setSelectedOption("");
     setAnswerState(null);
+    setAnswerExplanation("");
+    setAnswerError("");
     setShowHint(false);
   }
 
-  function submitAnswer() {
+  async function submitAnswer() {
     if (!selectedOption) return;
-    const correct = selectedOption === selectedChallenge.answerId;
-    setAnswerState(correct ? "correct" : "incorrect");
-    if (correct) {
-      setSolvedIds((current) => current.includes(selectedChallenge.id) ? current : [...current, selectedChallenge.id]);
+    const checkedChallengeId = selectedChallenge.id;
+    setIsChecking(true);
+    setAnswerError("");
+    try {
+      const response = await fetch("/api/logic-data/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeId: checkedChallengeId, optionId: selectedOption }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || "Could not check your answer. Please try again.");
+      }
+
+      if (payload.data.authenticated) {
+        setIsAuthenticated(true);
+        setAccountSolvedIds(payload.data.solvedIds);
+        setAccountStats(payload.data.stats);
+      }
+
+      if (selectedId === checkedChallengeId) {
+        setAnswerState(payload.data.correct ? "correct" : "incorrect");
+        setAnswerExplanation(payload.data.explanation ?? "");
+        if (payload.data.correct && !payload.data.authenticated) {
+          setBrowserSolvedIds((current) => current.includes(checkedChallengeId) ? current : [...current, checkedChallengeId]);
+        }
+      }
+    } catch (error) {
+      setAnswerError(error instanceof Error ? error.message : "Could not check your answer. Please try again.");
+    } finally {
+      setIsChecking(false);
     }
   }
 
@@ -128,8 +208,9 @@ export function LogicDataClient() {
   }
 
   const solvedCount = solvedIds.length;
-  const progress = Math.round((solvedCount / LOGIC_DATA_CHALLENGES.length) * 100);
+  const progress = Math.round((solvedCount / challenges.length) * 100);
   const selectedSolved = solvedIds.includes(selectedChallenge.id);
+  const browserOnlySolvedCount = browserSolvedIds.filter((id) => !accountSolvedIds.includes(id)).length;
 
   return (
     <div className="container-page max-w-[1240px] pb-16 pt-10 sm:pb-20 sm:pt-14">
@@ -155,23 +236,32 @@ export function LogicDataClient() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-medium text-muted">Your practice progress</p>
-                <p className="mt-1 text-3xl font-semibold tracking-tight text-text">{solvedCount}<span className="text-base font-medium text-muted"> / {LOGIC_DATA_CHALLENGES.length}</span></p>
+                <p className="mt-1 text-3xl font-semibold tracking-tight text-text">{solvedCount}<span className="text-base font-medium text-muted"> / {challenges.length}</span></p>
               </div>
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent"><Target className="h-5 w-5" /></span>
             </div>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-surface-hover">
               <div className="h-full rounded-full bg-gradient-to-r from-accent to-cyan-500 transition-[width] duration-500" style={{ width: `${progress}%` }} />
             </div>
-            <p className="mt-2 text-xs leading-5 text-muted">Progress is saved in this browser only.</p>
+            {isAuthenticated ? (
+              <div className="mt-2 text-xs leading-5 text-muted">
+                <p>Account sync · {accountStats?.currentStreak ?? 0} day streak · best {accountStats?.bestStreak ?? 0}</p>
+                {browserOnlySolvedCount > 0 && <p>{browserOnlySolvedCount} earlier browser solve{browserOnlySolvedCount === 1 ? "" : "s"} stay on this device; solve them again while signed in to add them to your profile.</p>}
+              </div>
+            ) : (
+              <p className="mt-2 text-xs leading-5 text-muted">
+                Saved in this browser. <Link href="/signin?callbackUrl=%2Flogic-data" className="font-medium text-accent hover:underline">Sign in to sync across devices</Link>.
+              </p>
+            )}
           </Card>
         </div>
       </section>
 
       <div className="mt-8 grid gap-3 sm:grid-cols-3">
         {([
-          { name: "Data", count: LOGIC_DATA_CHALLENGES.filter((challenge) => challenge.track === "Data").length, icon: BarChart3, text: "Read patterns and spot misleading totals" },
-          { name: "Math", count: LOGIC_DATA_CHALLENGES.filter((challenge) => challenge.track === "Math").length, icon: Calculator, text: "Use probability and expected value" },
-          { name: "Logic", count: LOGIC_DATA_CHALLENGES.filter((challenge) => challenge.track === "Logic").length, icon: Brain, text: "Trace rules and check assumptions" },
+          { name: "Data", count: challenges.filter((challenge) => challenge.track === "Data").length, icon: BarChart3, text: "Read patterns and spot misleading totals" },
+          { name: "Math", count: challenges.filter((challenge) => challenge.track === "Math").length, icon: Calculator, text: "Use probability and expected value" },
+          { name: "Logic", count: challenges.filter((challenge) => challenge.track === "Logic").length, icon: Brain, text: "Trace rules and check assumptions" },
         ]).map((item) => (
           <button
             key={item.name}
@@ -279,11 +369,11 @@ export function LogicDataClient() {
                 <div className="space-y-2">
                   {selectedChallenge.options.map((option) => {
                     const selected = selectedOption === option.id;
-                    const isCorrectOption = answerState === "correct" && option.id === selectedChallenge.answerId;
+                    const isCorrectOption = answerState === "correct" && option.id === selectedOption;
                     return (
-                      <button key={option.id} type="button" onClick={() => { setSelectedOption(option.id); setAnswerState(null); }}
+                    <button key={option.id} type="button" disabled={isChecking} onClick={() => { setSelectedOption(option.id); setAnswerState(null); setAnswerExplanation(""); setAnswerError(""); }}
                         aria-pressed={selected}
-                        className={`flex w-full items-start gap-3 rounded-xl border p-3.5 text-left text-sm leading-6 transition-colors ${isCorrectOption ? "border-success/35 bg-success/5" : selected ? "border-accent/40 bg-accent-soft/50" : "border-border bg-bg hover:bg-surface-hover"}`}>
+                        className={`flex w-full items-start gap-3 rounded-xl border p-3.5 text-left text-sm leading-6 transition-colors disabled:cursor-wait ${isCorrectOption ? "border-success/35 bg-success/5" : selected ? "border-accent/40 bg-accent-soft/50" : "border-border bg-bg hover:bg-surface-hover"}`}>
                         <span className={`mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${selected ? "border-accent bg-accent" : "border-border-strong"}`}>
                           {selected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
                         </span>
@@ -308,14 +398,16 @@ export function LogicDataClient() {
                     {answerState === "correct" ? <CheckCircle2 className="h-4 w-4" /> : <CircleHelp className="h-4 w-4" />}
                     {answerState === "correct" ? "That’s right" : "Not quite—try once more"}
                   </p>
-                  {answerState === "correct" && <p className="mt-2 text-sm leading-6 text-text">{selectedChallenge.explanation}</p>}
+                  {answerState === "correct" && <p className="mt-2 text-sm leading-6 text-text">{answerExplanation}</p>}
                 </div>
               )}
 
+              {answerError && <p role="alert" className="mt-4 rounded-lg border border-rose-500/25 bg-rose-500/5 px-3.5 py-3 text-sm text-rose-600 dark:text-rose-400">{answerError}</p>}
+
               <div className="mt-5 flex flex-wrap items-center gap-2">
-                <button type="button" onClick={submitAnswer} disabled={!selectedOption}
+                <button type="button" onClick={submitAnswer} disabled={!selectedOption || isChecking}
                   className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50">
-                  Check answer <Check className="h-4 w-4" />
+                  {isChecking ? "Checking…" : "Check answer"} <Check className="h-4 w-4" />
                 </button>
                 <button type="button" onClick={() => setShowHint((value) => !value)}
                   aria-expanded={showHint}
@@ -335,7 +427,7 @@ export function LogicDataClient() {
 
           <div className="mt-3 flex items-start gap-2 rounded-xl border border-border bg-surface/70 p-3.5 text-xs leading-5 text-muted">
             <RotateCcw className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            These are original practice prompts, not verified questions from any specific company. Your progress is stored locally in this browser.
+            These are original practice prompts, not verified questions from any specific company. Signed-in progress syncs to your account; guest progress stays in this browser.
           </div>
         </section>
       </div>

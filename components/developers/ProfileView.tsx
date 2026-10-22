@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Github, Linkedin, Globe, MapPin, GraduationCap, Pencil, BriefcaseBusiness, Sparkles, MessageCircle, ArrowUpRight, Code2, Award, FileText, ExternalLink } from "lucide-react";
+import { Github, Linkedin, Globe, MapPin, GraduationCap, Pencil, BriefcaseBusiness, Sparkles, MessageCircle, ArrowUpRight, Code2, Brain, Award, FileText, ExternalLink } from "lucide-react";
 import { Types } from "mongoose";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge, SkillBadge } from "@/components/ui/Badge";
@@ -42,10 +42,12 @@ export function ProfileView({
   user,
   isOwner = false,
   solvedCount = 0,
+  logicSolvedCount = 0,
 }: {
   user: ProfileDisplayUser;
   isOwner?: boolean;
   solvedCount?: number;
+  logicSolvedCount?: number;
 }) {
   const links = [
     { href: safeExternalUrl(user.githubUrl), label: "GitHub", icon: Github },
@@ -125,7 +127,15 @@ export function ProfileView({
         )}
       </Card>
 
-      <section className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]" aria-label="Coder highlights">
+      <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Coder highlights">
+        <Card className="flex items-center gap-4 p-5 sm:p-6">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"><Brain className="h-5 w-5" /></div>
+          <div>
+            <p className="text-xs font-medium text-muted">Logic &amp; Data solved</p>
+            <p className="mt-0.5 text-3xl font-semibold tracking-tight text-text">{logicSolvedCount}</p>
+          </div>
+          <Link href="/logic-data" className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline">Practice <ArrowUpRight className="h-3.5 w-3.5" /></Link>
+        </Card>
         <Card className="flex items-center gap-4 p-5 sm:p-6">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Code2 className="h-5 w-5" /></div>
           <div>

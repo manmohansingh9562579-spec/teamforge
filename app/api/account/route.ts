@@ -11,6 +11,7 @@ import { ContactRequest } from "@/models/ContactRequest";
 import { Message } from "@/models/Message";
 import { ProfilePhoto } from "@/models/ProfilePhoto";
 import { DailyCodingProgress } from "@/models/DailyCodingProgress";
+import { LogicDataProgress } from "@/models/LogicDataProgress";
 import { getCurrentSession } from "@/lib/session";
 import { apiOk, apiError, handleApiError } from "@/lib/api";
 import { Types } from "mongoose";
@@ -52,6 +53,7 @@ export async function DELETE() {
       Notification.deleteMany({ userId }),
       ChallengeSubmission.deleteMany({ userId }),
       DailyCodingProgress.deleteMany({ userId }),
+      LogicDataProgress.deleteMany({ userId }),
       FeedPost.deleteMany({ authorId: userId }),
       Notification.deleteMany({ "relatedEntity.kind": "post", "relatedEntity.id": { $in: ownedPostIds } }),
       Notification.deleteMany({ "relatedEntity.kind": "team", "relatedEntity.id": { $in: ownedTeamIds } }),

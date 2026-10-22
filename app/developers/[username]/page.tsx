@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db";
 import { getCurrentSession } from "@/lib/session";
 import { User } from "@/models/User";
 import { DailyCodingProgress } from "@/models/DailyCodingProgress";
+import { LogicDataProgress } from "@/models/LogicDataProgress";
 
 export const dynamic = "force-dynamic";
 
@@ -24,16 +25,22 @@ export default async function DeveloperProfilePage({
   const { username } = await params;
   const dev = await getDeveloper(username);
   if (!dev) notFound();
-  const [session, solvedProblems] = await Promise.all([
+  const [session, solvedProblems, solvedLogicPrompts] = await Promise.all([
     getCurrentSession(),
     DailyCodingProgress.distinct("problemSlug", { userId: dev._id, accepted: true }),
+    LogicDataProgress.distinct("challengeId", { userId: dev._id, solvedAt: { $exists: true } }),
   ]);
 
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="flex-1">
-        <ProfileView user={dev} solvedCount={solvedProblems.length} isOwner={session?.user?.id === dev._id.toString()} />
+        <ProfileView
+          user={dev}
+          solvedCount={solvedProblems.length}
+          logicSolvedCount={solvedLogicPrompts.length}
+          isOwner={session?.user?.id === dev._id.toString()}
+        />
       </main>
       <Footer />
     </div>
