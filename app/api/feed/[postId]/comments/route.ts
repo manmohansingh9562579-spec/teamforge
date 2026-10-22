@@ -7,11 +7,12 @@ import { FeedPost } from "@/models/FeedPost";
 import { User } from "@/models/User";
 import { createFeedCommentSchema } from "@/validations/feed";
 
-export async function GET(_request: Request, { params }: { params: { postId: string } }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ postId: string }> }) {
+  const routeParams = await params;
   try {
-    if (!Types.ObjectId.isValid(params.postId)) return apiError("Invalid post", 400);
+    if (!Types.ObjectId.isValid(routeParams.postId)) return apiError("Invalid post", 400);
     await connectDB();
-    const post = await FeedPost.findById(params.postId)
+    const post = await FeedPost.findById(routeParams.postId)
       .select("comments")
       .populate("comments.authorId", "name username avatar")
       .lean() as any;
@@ -33,21 +34,22 @@ export async function GET(_request: Request, { params }: { params: { postId: str
   }
 }
 
-export async function POST(request: Request, { params }: { params: { postId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ postId: string }> }) {
+  const routeParams = await params;
   try {
     const session = await getCurrentSession();
     if (!session?.user?.id) return apiError("Sign in to join the conversation", 401);
-    if (!Types.ObjectId.isValid(params.postId)) return apiError("Invalid post", 400);
+    if (!Types.ObjectId.isValid(routeParams.postId)) return apiError("Invalid post", 400);
     const { content } = createFeedCommentSchema.parse(await request.json());
     await connectDB();
 
     const post = await FeedPost.findOneAndUpdate(
-      { _id: params.postId, commentCount: { $lt: 100 } },
+      { _id: routeParams.postId, commentCount: { $lt: 100 } },
       { $push: { comments: { authorId: session.user.id, content } }, $inc: { commentCount: 1 } },
       { new: true, projection: "authorId comments" }
     ).lean() as any;
     if (!post) {
-      const exists = await FeedPost.exists({ _id: params.postId });
+      const exists = await FeedPost.exists({ _id: routeParams.postId });
       return exists ? apiError("This post has reached its comment limit", 409) : apiError("Post not found", 404);
     }
 
@@ -61,7 +63,7 @@ export async function POST(request: Request, { params }: { params: { postId: str
         userId: author._id,
         type: "feed_comment",
         message: `${commenter?.name ?? "Someone"} commented on your post`,
-        relatedEntity: { kind: "post", id: new Types.ObjectId(params.postId) },
+        relatedEntity: { kind: "post", id: new Types.ObjectId(routeParams.postId) },
       });
     }
 

@@ -16,10 +16,11 @@ import { calculateMatch } from "@/services/matchingService";
 
 export const dynamic = "force-dynamic";
 
-async function getTeamWithPeople(slug: string) {
+async function getTeamWithPeople(slug: string, viewerId?: string) {
   await connectDB();
   const team = await Team.findOne({ slug });
   if (!team) return null;
+  if (team.visibility === "private" && (!viewerId || !isTeamMember(team, viewerId))) return null;
 
   const owner = await User.findById(team.ownerId).select("name username avatar");
   const members = await User.find({
@@ -29,12 +30,13 @@ async function getTeamWithPeople(slug: string) {
   return { team, owner, members };
 }
 
-export default async function TeamPage({ params }: { params: { slug: string } }) {
-  const data = await getTeamWithPeople(params.slug);
+export default async function TeamPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const session = await getCurrentSession();
+  const data = await getTeamWithPeople(slug, session?.user?.id);
   if (!data) notFound();
   const { team, owner, members } = data;
 
-  const session = await getCurrentSession();
   const userId = session?.user?.id;
   const open = openPositions(team);
 

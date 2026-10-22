@@ -21,6 +21,7 @@ export function Avatar({
     .slice(0, 2)
     .map((p) => p[0]?.toUpperCase())
     .join("");
+  const avatarSrc = src?.startsWith("/api/profile/avatar/") ? src : null;
 
   return (
     <div
@@ -30,14 +31,14 @@ export function Avatar({
       )}
       style={{ width: px, height: px, fontSize: px * 0.38 }}
     >
-      {src ? (
+      {avatarSrc ? (
         <Image
-          src={src}
+          src={avatarSrc}
           alt={name}
           fill
           sizes={`${px}px`}
           className="object-cover"
-          unoptimized={src.startsWith("/api/profile/avatar/")}
+          unoptimized
         />
       ) : (
         <span>{initials}</span>

@@ -6,18 +6,19 @@ import { getCurrentSession } from "@/lib/session";
 import { ContactRequest } from "@/models/ContactRequest";
 import { updateContactRequestSchema } from "@/validations/contact";
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const routeParams = await params;
   try {
     const session = await getCurrentSession();
     if (!session?.user?.id) return apiError("Unauthorized", 401);
-    if (!Types.ObjectId.isValid(params.id) || !/^[a-f\d]{24}$/i.test(params.id)) {
+    if (!Types.ObjectId.isValid(routeParams.id) || !/^[a-f\d]{24}$/i.test(routeParams.id)) {
       return apiError("Invalid contact request ID", 400);
     }
 
     const { action } = updateContactRequestSchema.parse(await req.json());
     await connectDB();
 
-    const request = await ContactRequest.findById(params.id).select("senderId recipientId message status");
+    const request = await ContactRequest.findById(routeParams.id).select("senderId recipientId message status");
     if (!request) return apiError("Contact request not found", 404);
 
     const isSender = request.senderId.toString() === session.user.id;
@@ -29,7 +30,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       ? { senderId: session.user.id }
       : { recipientId: session.user.id };
     const updated = await ContactRequest.findOneAndUpdate(
-      { _id: params.id, status: "pending", ...ownerFilter },
+      { _id: routeParams.id, status: "pending", ...ownerFilter },
       { $set: { status: action } },
       { new: true }
     ).select("senderId recipientId message status createdAt updatedAt");

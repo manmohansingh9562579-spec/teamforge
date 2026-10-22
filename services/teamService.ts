@@ -19,4 +19,4 @@ export async function generateUniqueSlug(name: string): Promise<string> {
   return slug;
 }
 
-export { isTeamOwner, isTeamMember, openPositions } from "./teamHelpers";
+export { canViewTeam, isTeamOwner, isTeamMember, openPositions } from "./teamHelpers";

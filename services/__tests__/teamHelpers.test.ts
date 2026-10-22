@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isTeamOwner, isTeamMember, openPositions } from "@/services/teamHelpers";
+import { canViewTeam, isTeamOwner, isTeamMember, openPositions } from "@/services/teamHelpers";
 
 const ownerId = "507f1f77bcf86cd799439011";
 const memberId = "507f1f77bcf86cd799439012";
@@ -42,5 +42,23 @@ describe("openPositions", () => {
 
   it("never goes negative when the team is over capacity", () => {
     expect(openPositions({ teamSize: 2, members: [{}, {}, {}] })).toBe(0);
+  });
+});
+
+describe("canViewTeam", () => {
+  it("allows public teams to be viewed without signing in", () => {
+    expect(canViewTeam({ visibility: "public", ownerId, members: [] })).toBe(true);
+  });
+
+  it("hides private teams from visitors and non-members", () => {
+    const privateTeam = { visibility: "private", ownerId, members: [{ userId: memberId }] };
+    expect(canViewTeam(privateTeam)).toBe(false);
+    expect(canViewTeam(privateTeam, strangerId)).toBe(false);
+  });
+
+  it("allows private team owners and members", () => {
+    const privateTeam = { visibility: "private", ownerId, members: [{ userId: memberId }] };
+    expect(canViewTeam(privateTeam, ownerId)).toBe(true);
+    expect(canViewTeam(privateTeam, memberId)).toBe(true);
   });
 });

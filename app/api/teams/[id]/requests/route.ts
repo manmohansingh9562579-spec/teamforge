@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/db";
 import { Team } from "@/models/Team";
 import { JoinRequest } from "@/models/Request";
 import { getCurrentSession } from "@/lib/session";
-import { isTeamMember, openPositions } from "@/services/teamService";
+import { canViewTeam, isTeamMember, openPositions } from "@/services/teamService";
 import { notify } from "@/lib/notify";
 import { apiOk, apiError, handleApiError } from "@/lib/api";
 
@@ -11,7 +11,8 @@ const bodySchema = z.object({
   message: z.string().trim().max(500).optional().default(""),
 });
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const session = await getCurrentSession();
     if (!session?.user?.id) return apiError("Unauthorized", 401);
@@ -19,8 +20,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const { message } = bodySchema.parse(await req.json());
 
     await connectDB();
-    const team = await Team.findById(params.id);
+    const team = await Team.findById(id);
     if (!team) return apiError("Team not found", 404);
+    if (!canViewTeam(team, session.user.id)) return apiError("Team not found", 404);
 
     if (team.status === "closed" || team.status === "completed") {
       return apiError("This team is not accepting requests", 400);

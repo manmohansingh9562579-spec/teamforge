@@ -5,8 +5,9 @@ import { requireTeamOwner } from "@/lib/teamAccess";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeamSettingsPage({ params }: { params: { slug: string } }) {
-  const { team } = await requireTeamOwner(params.slug);
+export default async function TeamSettingsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const { team } = await requireTeamOwner(slug);
 
   return (
     <AppShell>

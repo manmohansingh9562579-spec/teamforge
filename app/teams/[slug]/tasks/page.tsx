@@ -6,8 +6,9 @@ import { User } from "@/models/User";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeamTasksPage({ params }: { params: { slug: string } }) {
-  const { team, isOwner } = await requireTeamAccess(params.slug);
+export default async function TeamTasksPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const { team, isOwner } = await requireTeamAccess(slug);
 
   const memberIds = [team.ownerId, ...team.members.map((m) => m.userId)];
   const members = await User.find({ _id: { $in: memberIds } }).select("name");

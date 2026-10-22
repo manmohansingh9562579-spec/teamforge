@@ -16,13 +16,14 @@ async function loadTaskAndTeam(taskId: string) {
   return { task, team };
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const routeParams = await params;
   try {
     const session = await getCurrentSession();
     if (!session?.user?.id) return apiError("Unauthorized", 401);
 
     await connectDB();
-    const found = await loadTaskAndTeam(params.id);
+    const found = await loadTaskAndTeam(routeParams.id);
     if (!found) return apiError("Task not found", 404);
     const { task, team } = found;
 
@@ -82,13 +83,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const routeParams = await params;
   try {
     const session = await getCurrentSession();
     if (!session?.user?.id) return apiError("Unauthorized", 401);
 
     await connectDB();
-    const found = await loadTaskAndTeam(params.id);
+    const found = await loadTaskAndTeam(routeParams.id);
     if (!found) return apiError("Task not found", 404);
     const { task, team } = found;
 

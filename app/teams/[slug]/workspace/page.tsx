@@ -20,8 +20,9 @@ function timeAgo(date: Date) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export default async function WorkspaceOverviewPage({ params }: { params: { slug: string } }) {
-  const { team, isOwner } = await requireTeamAccess(params.slug);
+export default async function WorkspaceOverviewPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const { team, isOwner } = await requireTeamAccess(slug);
 
   const [tasks, recentActivity] = await Promise.all([
     Task.find({ teamId: team._id }),

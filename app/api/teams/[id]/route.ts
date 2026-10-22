@@ -1,34 +1,40 @@
 import { connectDB } from "@/lib/db";
+import { Types } from "mongoose";
 import { Team } from "@/models/Team";
 import { JoinRequest } from "@/models/Request";
 import { Task } from "@/models/Task";
 import { Activity } from "@/models/Activity";
 import { getCurrentSession } from "@/lib/session";
 import { updateTeamSchema } from "@/validations/team";
-import { isTeamOwner } from "@/services/teamService";
+import { canViewTeam, isTeamOwner } from "@/services/teamService";
 import { apiOk, apiError, handleApiError } from "@/lib/api";
 
 async function findTeam(id: string) {
+  if (!/^[a-f\d]{24}$/i.test(id) || !Types.ObjectId.isValid(id)) return null;
   await connectDB();
   return Team.findById(id);
 }
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const routeParams = await params;
   try {
-    const team = await findTeam(params.id);
+    const session = await getCurrentSession();
+    const team = await findTeam(routeParams.id);
     if (!team) return apiError("Team not found", 404);
+    if (!canViewTeam(team, session?.user?.id)) return apiError("Team not found", 404);
     return apiOk(team);
   } catch (err) {
     return handleApiError(err);
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const routeParams = await params;
   try {
     const session = await getCurrentSession();
     if (!session?.user?.id) return apiError("Unauthorized", 401);
 
-    const team = await findTeam(params.id);
+    const team = await findTeam(routeParams.id);
     if (!team) return apiError("Team not found", 404);
 
     // Server-side authorization only — never trust a client-supplied owner flag.
@@ -49,12 +55,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const routeParams = await params;
   try {
     const session = await getCurrentSession();
     if (!session?.user?.id) return apiError("Unauthorized", 401);
 
-    const team = await findTeam(params.id);
+    const team = await findTeam(routeParams.id);
     if (!team) return apiError("Team not found", 404);
     if (!isTeamOwner(team, session.user.id)) return apiError("Forbidden", 403);
 

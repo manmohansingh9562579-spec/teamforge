@@ -8,8 +8,9 @@ import { User } from "@/models/User";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeamMembersPage({ params }: { params: { slug: string } }) {
-  const { team, userId, isOwner } = await requireTeamAccess(params.slug);
+export default async function TeamMembersPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const { team, userId, isOwner } = await requireTeamAccess(slug);
 
   const memberIds = [team.ownerId, ...team.members.map((m) => m.userId)];
   const users = await User.find({ _id: { $in: memberIds } }).select("name username avatar skills");

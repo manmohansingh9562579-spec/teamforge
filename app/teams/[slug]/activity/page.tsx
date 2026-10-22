@@ -19,8 +19,9 @@ function timeAgo(date: Date) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export default async function TeamActivityPage({ params }: { params: { slug: string } }) {
-  const { team, isOwner } = await requireTeamAccess(params.slug);
+export default async function TeamActivityPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const { team, isOwner } = await requireTeamAccess(slug);
 
   const events = await Activity.find({ teamId: team._id }).sort({ createdAt: -1 }).limit(100);
   const actorIds = [...new Set(events.map((e) => e.actorId.toString()))];

@@ -9,26 +9,27 @@ import { apiOk, apiError, handleApiError } from "@/lib/api";
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string; userId: string } }
+  { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
+  const { id, userId } = await params;
   try {
     const session = await getCurrentSession();
     if (!session?.user?.id) return apiError("Unauthorized", 401);
 
     await connectDB();
-    const team = await Team.findById(params.id);
+    const team = await Team.findById(id);
     if (!team) return apiError("Team not found", 404);
 
-    const isSelf = params.userId === session.user.id;
+    const isSelf = userId === session.user.id;
     const isOwner = isTeamOwner(team, session.user.id);
 
-    if (isTeamOwner(team, params.userId)) {
+    if (isTeamOwner(team, userId)) {
       return apiError("The team owner can't be removed. Delete the team instead.", 400);
     }
     if (!isOwner && !isSelf) return apiError("Forbidden", 403);
 
     const before = team.members.length;
-    team.members = team.members.filter((m) => m.userId.toString() !== params.userId) as any;
+    team.members = team.members.filter((m) => m.userId.toString() !== userId) as any;
     if (team.members.length === before) return apiError("Member not found", 404);
 
     await team.save();
@@ -38,12 +39,12 @@ export async function DELETE(
       actorId: session.user.id,
       action: isSelf ? "left the team" : "removed a member",
       entityType: "member",
-      entityId: params.userId,
+      entityId: userId,
     });
 
     if (!isSelf) {
       await notify({
-        userId: params.userId,
+        userId,
         type: "member_removed",
         message: `You were removed from ${team.name}`,
         relatedEntity: { kind: "team", id: team._id },
@@ -60,19 +61,20 @@ const roleSchema = z.object({ role: z.string().trim().min(1).max(60) });
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string; userId: string } }
+  { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
+  const { id, userId } = await params;
   try {
     const session = await getCurrentSession();
     if (!session?.user?.id) return apiError("Unauthorized", 401);
 
     await connectDB();
-    const team = await Team.findById(params.id);
+    const team = await Team.findById(id);
     if (!team) return apiError("Team not found", 404);
     if (!isTeamOwner(team, session.user.id)) return apiError("Forbidden", 403);
 
     const { role } = roleSchema.parse(await req.json());
-    const member = team.members.find((m) => m.userId.toString() === params.userId);
+    const member = team.members.find((m) => m.userId.toString() === userId);
     if (!member) return apiError("Member not found", 404);
 
     member.role = role;

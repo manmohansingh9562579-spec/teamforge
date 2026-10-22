@@ -3,7 +3,9 @@ import { apiError, apiOk, handleApiError } from "@/lib/api";
 import { connectDB } from "@/lib/db";
 import { getCurrentSession } from "@/lib/session";
 import { Message, type IMessage } from "@/models/Message";
+import { ContactRequest } from "@/models/ContactRequest";
 import { User } from "@/models/User";
+import { getContactPairKey } from "@/services/contactService";
 import { createMessageSchema } from "@/validations/message";
 
 const objectIdPattern = /^[a-f\d]{24}$/i;
@@ -30,16 +32,23 @@ function getPeerId(rawId: string, currentUserId: string) {
   return { valid: true as const, peerId };
 }
 
-export async function GET(_request: Request, { params }: { params: { userId: string } }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ userId: string }> }) {
+  const routeParams = await params;
   try {
     const session = await getCurrentSession();
     if (!session?.user?.id) return apiError("Unauthorized", 401);
 
     const currentUserId = session.user.id.toLowerCase();
-    const peer = getPeerId(params.userId, currentUserId);
+    const peer = getPeerId(routeParams.userId, currentUserId);
     if (!peer.valid) return apiError(peer.error, 400);
 
     await connectDB();
+    const isConnected = await ContactRequest.exists({
+      pairKey: getContactPairKey(currentUserId, peer.peerId),
+      status: "accepted",
+    });
+    if (!isConnected) return apiError("Connect with this developer before messaging", 403);
+
     const developer = await User.findById(peer.peerId).select("_id name username avatar").lean();
     if (!developer) return apiError("Developer not found", 404);
 
@@ -68,17 +77,24 @@ export async function GET(_request: Request, { params }: { params: { userId: str
   }
 }
 
-export async function POST(request: Request, { params }: { params: { userId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ userId: string }> }) {
+  const routeParams = await params;
   try {
     const session = await getCurrentSession();
     if (!session?.user?.id) return apiError("Unauthorized", 401);
 
     const currentUserId = session.user.id.toLowerCase();
-    const peer = getPeerId(params.userId, currentUserId);
+    const peer = getPeerId(routeParams.userId, currentUserId);
     if (!peer.valid) return apiError(peer.error, 400);
 
     const { content } = createMessageSchema.parse(await request.json());
     await connectDB();
+
+    const isConnected = await ContactRequest.exists({
+      pairKey: getContactPairKey(currentUserId, peer.peerId),
+      status: "accepted",
+    });
+    if (!isConnected) return apiError("Connect with this developer before messaging", 403);
 
     const developerExists = await User.exists({ _id: peer.peerId });
     if (!developerExists) return apiError("Developer not found", 404);

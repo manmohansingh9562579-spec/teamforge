@@ -19,9 +19,10 @@ async function getDeveloper(username: string) {
 export default async function DeveloperProfilePage({
   params,
 }: {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 }) {
-  const dev = await getDeveloper(params.username);
+  const { username } = await params;
+  const dev = await getDeveloper(username);
   if (!dev) notFound();
   const [session, solvedProblems] = await Promise.all([
     getCurrentSession(),

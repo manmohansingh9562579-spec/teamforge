@@ -19,9 +19,9 @@ export const profileSchema = z.object({
   skills: z.array(z.string().trim().min(1)).max(30).default([]),
   preferredRoles: z.array(z.enum(ROLES)).max(9).default([]),
   interests: z.array(z.enum(INTERESTS)).max(5).default([]),
-  githubUrl: z.string().trim().url().optional().or(z.literal("")),
-  linkedinUrl: z.string().trim().url().optional().or(z.literal("")),
-  portfolioUrl: z.string().trim().url().optional().or(z.literal("")),
+  githubUrl: optionalHttpUrl,
+  linkedinUrl: optionalHttpUrl,
+  portfolioUrl: optionalHttpUrl,
   achievements: z.array(z.object({
     title: z.string().trim().min(2).max(100),
     issuer: z.string().trim().max(100).optional().default(""),

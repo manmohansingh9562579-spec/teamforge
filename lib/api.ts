@@ -22,6 +22,10 @@ export function handleApiError(err: unknown) {
     return apiError("Invalid JSON body", 400);
   }
 
+  if (err && typeof err === "object" && "name" in err && (err as any).name === "CastError") {
+    return apiError("Invalid identifier", 400);
+  }
+
   if (err && typeof err === "object" && "code" in err && (err as any).code === 11000) {
     const field = Object.keys((err as any).keyPattern ?? { field: 1 })[0];
     return apiError(`This ${field} is already taken`, 409);

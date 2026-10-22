@@ -5,7 +5,8 @@ import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export default async function MessagePage({ params }: { params: { userId: string } }) {
+export default async function MessagePage({ params }: { params: Promise<{ userId: string }> }) {
+  const { userId } = await params;
   const user = await getCurrentUser();
   if (!user) redirect("/signin");
 
@@ -13,8 +14,8 @@ export default async function MessagePage({ params }: { params: { userId: string
     <AppShell>
       <div className="container-page mx-auto max-w-4xl py-4 sm:py-6">
         <MessageThreadClient
-          key={params.userId}
-          developerId={params.userId}
+          key={userId}
+          developerId={userId}
           viewerId={user._id.toString()}
         />
       </div>

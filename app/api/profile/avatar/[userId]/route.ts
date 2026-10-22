@@ -4,12 +4,13 @@ import { ProfilePhoto } from "@/models/ProfilePhoto";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
-  if (!Types.ObjectId.isValid(params.userId)) return new Response("Not found", { status: 404 });
+  const routeParams = await params;
+  if (!Types.ObjectId.isValid(routeParams.userId)) return new Response("Not found", { status: 404 });
 
   await connectDB();
-  const photo = await ProfilePhoto.findOne({ userId: params.userId })
+  const photo = await ProfilePhoto.findOne({ userId: routeParams.userId })
     .select("contentType data updatedAt");
 
   if (!photo) return new Response("Not found", { status: 404 });

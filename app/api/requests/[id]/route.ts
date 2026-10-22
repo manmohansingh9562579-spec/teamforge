@@ -13,7 +13,8 @@ const bodySchema = z.object({
   role: z.string().trim().min(1).max(60).optional(),
 });
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const session = await getCurrentSession();
     if (!session?.user?.id) return apiError("Unauthorized", 401);
@@ -21,7 +22,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const { status, role } = bodySchema.parse(await req.json());
 
     await connectDB();
-    const request = await JoinRequest.findById(params.id);
+    const request = await JoinRequest.findById(id);
     if (!request) return apiError("Request not found", 404);
     if (request.status !== "pending") return apiError("This request was already resolved", 400);
 

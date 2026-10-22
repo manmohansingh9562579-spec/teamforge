@@ -6,6 +6,7 @@ import { getCurrentSession } from "@/lib/session";
 import { ContactRequest, type IContactRequest } from "@/models/ContactRequest";
 import { User, type IUser } from "@/models/User";
 import { createContactRequestSchema } from "@/validations/contact";
+import { getContactPairKey } from "@/services/contactService";
 
 const publicProfileFields =
   "name username avatar headline location college graduationYear experienceLevel availability skills preferredRoles interests githubUrl linkedinUrl portfolioUrl";
@@ -33,10 +34,6 @@ type ContactRequestRecord = Pick<
   IContactRequest,
   "_id" | "senderId" | "recipientId" | "message" | "status" | "createdAt" | "updatedAt"
 >;
-
-function getPairKey(firstId: string, secondId: string) {
-  return [firstId.toLowerCase(), secondId.toLowerCase()].sort().join(":");
-}
 
 function toPublicProfile(profile: PublicContactProfile) {
   return {
@@ -83,7 +80,7 @@ export async function POST(req: Request) {
     const recipient = await User.findById(recipientId).select("_id");
     if (!recipient) return apiError("Developer not found", 404);
 
-    const pairKey = getPairKey(senderId, recipientId);
+    const pairKey = getContactPairKey(senderId, recipientId);
     const [pending, connected] = await Promise.all([
       ContactRequest.findOne({ pairKey, status: "pending" }).select("senderId"),
       ContactRequest.exists({ pairKey, status: "accepted" }),
@@ -160,7 +157,7 @@ export async function GET(req: Request) {
       if (!otherUserExists) return apiError("Developer not found", 404);
 
       const latest = await ContactRequest.findOne({
-        pairKey: getPairKey(currentUserId, normalizedOtherUserId),
+        pairKey: getContactPairKey(currentUserId, normalizedOtherUserId),
       })
         .sort({ updatedAt: -1, createdAt: -1 })
         .select("senderId status")
