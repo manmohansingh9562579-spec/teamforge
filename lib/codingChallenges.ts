@@ -235,6 +235,192 @@ export const CODING_PROBLEMS: CodingProblem[] = [
   },
 ];
 
+function createRandom(seed: number) {
+  let state = (seed % 0xffff_ffff) >>> 0;
+  if (state === 0) state = 0x6d2b79f5;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4_294_967_296;
+  };
+}
+
+export function generateCodingPracticeProblem(seed: number): CodingProblem | null {
+  if (!Number.isSafeInteger(seed) || seed < 0 || seed > Number.MAX_SAFE_INTEGER) return null;
+  const random = createRandom(seed);
+  const integer = (min: number, max: number) => min + Math.floor(random() * (max - min + 1));
+  const choose = <T,>(items: T[]) => items[integer(0, items.length - 1)];
+  const base = CODING_PROBLEMS[seed % CODING_PROBLEMS.length];
+  const rawCases: { input: string; output: string }[] = [];
+
+  for (let caseIndex = 0; caseIndex < 5; caseIndex += 1) {
+    let input = "";
+    let output = "";
+
+    switch (base.slug) {
+      case "two-sum": {
+        const length = integer(3, 8);
+        const values = Array.from({ length }, () => integer(-500, 500));
+        const first = integer(0, length - 2);
+        const second = integer(first + 1, length - 1);
+        values[first] = 10_000 + integer(0, 500);
+        values[second] = 20_000 + integer(0, 500);
+        const target = values[first] + values[second];
+        input = `${length}\n${values.join(" ")}\n${target}`;
+        output = `${first} ${second}`;
+        break;
+      }
+      case "maximum-subarray": {
+        const length = integer(1, 14);
+        const values = Array.from({ length }, () => integer(-20, 20));
+        let ending = values[0];
+        let best = ending;
+        for (const value of values.slice(1)) {
+          ending = Math.max(value, ending + value);
+          best = Math.max(best, ending);
+        }
+        input = `${length}\n${values.join(" ")}`;
+        output = String(best);
+        break;
+      }
+      case "trapping-rain-water": {
+        const length = integer(1, 14);
+        const heights = Array.from({ length }, () => integer(0, 12));
+        let water = 0;
+        for (let index = 0; index < length; index += 1) {
+          const left = Math.max(...heights.slice(0, index + 1));
+          const right = Math.max(...heights.slice(index));
+          water += Math.max(0, Math.min(left, right) - heights[index]);
+        }
+        input = `${length}\n${heights.join(" ")}`;
+        output = String(water);
+        break;
+      }
+      case "valid-parentheses": {
+        const pairs: Record<string, string> = { "(": ")", "[": "]", "{": "}" };
+        const opens = Object.keys(pairs);
+        const openCount = integer(1, 8);
+        const stack: string[] = [];
+        let value = "";
+        let opened = 0;
+        while (opened < openCount || stack.length) {
+          if (opened < openCount && (!stack.length || random() < 0.58)) {
+            const opening = choose(opens);
+            stack.push(pairs[opening]);
+            value += opening;
+            opened += 1;
+          } else {
+            value += stack.pop();
+          }
+        }
+        if (random() < 0.5) value = `${value.slice(0, -1)}${choose(opens)}`;
+        const expected = [] as string[];
+        const closes: Record<string, string> = { ")": "(", "]": "[", "}": "{" };
+        let valid = true;
+        for (const char of value) {
+          if (pairs[char]) expected.push(pairs[char]);
+          else if (expected.pop() !== char) { valid = false; break; }
+        }
+        valid = valid && expected.length === 0 && value.split("").every((char) => pairs[char] || closes[char]);
+        input = value;
+        output = String(valid);
+        break;
+      }
+      case "product-except-self": {
+        const length = integer(2, 8);
+        const values = Array.from({ length }, () => integer(-3, 3));
+        const products = values.map((_, index) => values.reduce((product, value, other) => other === index ? product : product * value, 1));
+        input = `${length}\n${values.join(" ")}`;
+        output = products.join(" ");
+        break;
+      }
+      case "coin-change": {
+        const coinCount = integer(1, 4);
+        const coins = [...new Set(Array.from({ length: coinCount }, () => integer(1, 10)))].sort((a, b) => a - b);
+        const amount = integer(0, 35);
+        const dp = Array(amount + 1).fill(Number.POSITIVE_INFINITY);
+        dp[0] = 0;
+        for (let value = 1; value <= amount; value += 1) {
+          for (const coin of coins) if (coin <= value) dp[value] = Math.min(dp[value], dp[value - coin] + 1);
+        }
+        input = `${coins.length} ${amount}\n${coins.join(" ")}`;
+        output = String(Number.isFinite(dp[amount]) ? dp[amount] : -1);
+        break;
+      }
+      case "palindrome-number": {
+        const value = integer(-100_000, 100_000);
+        const digits = String(value);
+        input = digits;
+        output = String(value >= 0 && digits === digits.split("").reverse().join(""));
+        break;
+      }
+      case "longest-substring": {
+        const alphabet = "abcdefg";
+        const length = integer(1, 16);
+        const value = Array.from({ length }, () => alphabet[integer(0, alphabet.length - 1)]).join("");
+        let start = 0;
+        let best = 0;
+        const lastSeen = new Map<string, number>();
+        for (let index = 0; index < value.length; index += 1) {
+          const previous = lastSeen.get(value[index]);
+          if (previous !== undefined && previous >= start) start = previous + 1;
+          lastSeen.set(value[index], index);
+          best = Math.max(best, index - start + 1);
+        }
+        input = value;
+        output = String(best);
+        break;
+      }
+      case "largest-rectangle": {
+        const length = integer(1, 14);
+        const heights = Array.from({ length }, () => integer(0, 12));
+        let best = 0;
+        for (let left = 0; left < length; left += 1) {
+          let minimum = Number.POSITIVE_INFINITY;
+          for (let right = left; right < length; right += 1) {
+            minimum = Math.min(minimum, heights[right]);
+            best = Math.max(best, minimum * (right - left + 1));
+          }
+        }
+        input = `${length}\n${heights.join(" ")}`;
+        output = String(best);
+        break;
+      }
+    }
+
+    rawCases.push({ input, output });
+  }
+
+  const testCases = rawCases.map((testCase, index) => ({
+    input: testCase.input,
+    expectedOutput: testCase.output,
+    hidden: index >= 2,
+  }));
+
+  return {
+    ...base,
+    slug: `generated-${seed}`,
+    title: `${base.title} · Variant ${seed % 1_000_000}`,
+    examples: rawCases.slice(0, 2).map((testCase) => ({
+      input: testCase.input,
+      output: testCase.output,
+      explanation: "A fresh practice input following the rule in the prompt.",
+    })),
+    testCases,
+  };
+}
+
+export function getCodingProblem(slug: string | null | undefined) {
+  if (!slug) return undefined;
+  const existing = CODING_PROBLEMS.find((problem) => problem.slug === slug);
+  if (existing) return existing;
+  const generatedSeed = /^generated-(\d{1,16})$/.exec(slug);
+  if (!generatedSeed) return undefined;
+  return generateCodingPracticeProblem(Number(generatedSeed[1])) ?? undefined;
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function getUtcDateKey(date = new Date()) {

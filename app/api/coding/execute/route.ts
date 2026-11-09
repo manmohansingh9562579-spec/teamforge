@@ -1,7 +1,7 @@
 import { connectDB } from "@/lib/db";
 import { getCurrentSession } from "@/lib/session";
 import { apiError, apiOk, handleApiError } from "@/lib/api";
-import { CODING_PROBLEMS, getUtcDateKey } from "@/lib/codingChallenges";
+import { getCodingProblem, getUtcDateKey } from "@/lib/codingChallenges";
 import { getJudge0LanguageIds, judge0Fetch } from "@/lib/judge0";
 import { DailyCodingProgress } from "@/models/DailyCodingProgress";
 import { codingExecutionSchema } from "@/validations/coding";
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     if (!session?.user?.id) return apiError("Sign in to run and submit code", 401);
 
     const data = codingExecutionSchema.parse(await request.json());
-    const problem = CODING_PROBLEMS.find((item) => item.slug === data.problemSlug);
+    const problem = getCodingProblem(data.problemSlug);
     if (!problem) return apiError("This coding question is no longer available", 404);
 
     await connectDB();

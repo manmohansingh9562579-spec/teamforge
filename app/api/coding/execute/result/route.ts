@@ -2,7 +2,7 @@ import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { getCurrentSession } from "@/lib/session";
 import { apiError, apiOk, handleApiError } from "@/lib/api";
-import { CODING_PROBLEMS, getUtcDateKey } from "@/lib/codingChallenges";
+import { getCodingProblem, getUtcDateKey } from "@/lib/codingChallenges";
 import { judge0Fetch } from "@/lib/judge0";
 import { DailyCodingProgress } from "@/models/DailyCodingProgress";
 
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
     };
     const submissions = Array.isArray(batch) ? batch : batch.submissions ?? [];
     const byToken = new Map(submissions.map((submission) => [submission.token, submission]));
-    const problem = CODING_PROBLEMS.find((item) => item.slug === progress.problemSlug);
+    const problem = getCodingProblem(progress.problemSlug);
     if (!problem) return apiError("Problem not found", 404);
     const tests = progress.judgeMode === "run"
       ? problem.testCases.filter((testCase) => !testCase.hidden)

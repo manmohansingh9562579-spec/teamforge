@@ -4,6 +4,7 @@ import { apiOk, handleApiError } from "@/lib/api";
 import {
   CODING_LANGUAGES,
   CODING_PROBLEMS,
+  getCodingProblem,
   getDailyCodingProblem,
   getPublicCodingProblem,
   getUtcDateKey,
@@ -17,8 +18,16 @@ export async function GET(request: Request) {
     const session = await getCurrentSession();
     const dateKey = getUtcDateKey();
     const dailyProblem = getDailyCodingProblem();
-    const requestedSlug = new URL(request.url).searchParams.get("slug");
-    const selectedProblem = CODING_PROBLEMS.find((problem) => problem.slug === requestedSlug) ?? dailyProblem;
+    const searchParams = new URL(request.url).searchParams;
+    const selectedProblem = getCodingProblem(searchParams.get("slug")) ?? dailyProblem;
+    const generatedSeedsParam = searchParams.get("generated");
+    const generatedSeeds = [...new Set((generatedSeedsParam ? generatedSeedsParam.split(",") : [])
+      .slice(0, 9)
+      .map((value) => Number(value))
+      .filter((value) => Number.isSafeInteger(value) && value >= 0))];
+    const generatedProblems = generatedSeeds
+      .map((seed) => getCodingProblem(`generated-${seed}`))
+      .filter((problem): problem is NonNullable<typeof problem> => Boolean(problem));
 
     let todayProgress: any = null;
     let acceptedProgress: any[] = [];
@@ -55,7 +64,7 @@ export async function GET(request: Request) {
       dateKey,
       dailySlug: dailyProblem.slug,
       selectedProblem: getPublicCodingProblem(selectedProblem),
-      problems: CODING_PROBLEMS.map((problem) => ({
+      problems: [...CODING_PROBLEMS, ...generatedProblems].map((problem) => ({
         slug: problem.slug,
         title: problem.title,
         difficulty: problem.difficulty,

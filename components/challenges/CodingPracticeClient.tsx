@@ -122,10 +122,14 @@ export function CodingPracticeClient() {
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [runnerError, setRunnerError] = useState("");
   const [showHints, setShowHints] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
   const drafts = useRef<Record<string, string>>({});
   const languageRef = useRef<CodingLanguage>("python");
   const requestId = useRef(0);
   const editorRef = useRef<HTMLTextAreaElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const generatingMoreRef = useRef(false);
 
   const loadData = useCallback(async (slug?: string, showLoading = true) => {
     const currentRequest = ++requestId.current;
@@ -143,7 +147,11 @@ export function CodingPracticeClient() {
       const draftKey = `${nextSlug}:${nextLanguage}`;
       const nextCode = drafts.current[draftKey] ?? next.todayProgress?.sourceCode ?? CODE_TEMPLATES[nextLanguage];
 
-      setData(next);
+      setData((current) => {
+        const existingGenerated = current?.problems.filter((item) => item.slug.startsWith("generated-")) ?? [];
+        const combined = [...next.problems, ...existingGenerated];
+        return { ...next, problems: [...new Map(combined.map((item) => [item.slug, item])).values()] };
+      });
       setSelectedSlug(nextSlug);
       setLanguage(nextLanguage);
       languageRef.current = nextLanguage;
@@ -155,9 +163,49 @@ export function CodingPracticeClient() {
     }
   }, []);
 
+  const loadMoreQuestions = useCallback(async () => {
+    if (generatingMoreRef.current) return;
+    generatingMoreRef.current = true;
+    setIsLoadingMore(true);
+    setLoadMoreError(false);
+    try {
+      const words = new Uint32Array(2);
+      const candidate = typeof window !== "undefined" && window.crypto?.getRandomValues
+        ? (window.crypto.getRandomValues(words), (words[0] & 0x1fffff) * 4_294_967_296 + words[1])
+        : Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+      let firstSeed = Math.floor(candidate / 9) * 9;
+      if (firstSeed + 8 > Number.MAX_SAFE_INTEGER) firstSeed -= 9;
+      const seeds = Array.from({ length: 9 }, (_, index) => firstSeed + index);
+      const response = await fetch(`/api/coding?generated=${seeds.join(",")}`, { cache: "no-store" });
+      const json = await response.json();
+      if (!response.ok) throw new Error(getErrorMessage(json, "Could not generate more questions"));
+      const generated = (json.data as CodingData).problems.filter((item) => item.slug.startsWith("generated-"));
+      setData((current) => {
+        if (!current) return current;
+        const combined = [...current.problems, ...generated];
+        return { ...current, problems: [...new Map(combined.map((item) => [item.slug, item])).values()] };
+      });
+    } catch {
+      setLoadMoreError(true);
+    } finally {
+      generatingMoreRef.current = false;
+      setIsLoadingMore(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || !data || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) void loadMoreQuestions();
+    }, { rootMargin: "360px 0px" });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [data, loadMoreQuestions]);
 
   const problem = data?.selectedProblem;
   const streaks = useMemo(
@@ -300,6 +348,16 @@ export function CodingPracticeClient() {
   }
 
   const isDailyProblem = problem.slug === data.dailySlug;
+  const codingCoachContext = [
+    `Challenge: ${problem.title}`,
+    `Difficulty: ${problem.difficulty}`,
+    `Topic: ${problem.topic}`,
+    `Statement: ${problem.statement}`,
+    `Input format: ${problem.inputFormat}`,
+    `Output format: ${problem.outputFormat}`,
+    `Constraints: ${problem.constraints.join("; ")}`,
+    `Examples: ${problem.examples.map((example) => `Input ${example.input} → Output ${example.output}`).join(" | ")}`,
+  ].join("\n");
 
   return (
     <div className="container-page max-w-[1440px] py-8 pb-24 sm:py-10">
@@ -447,17 +505,20 @@ export function CodingPracticeClient() {
         </section>
 
         <section aria-label="Code editor" className="min-w-0 xl:sticky xl:top-20">
-          <Card className="overflow-hidden border-border-strong">
+          <Card className="relative border-border-strong">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-hover/60 px-4 py-3 sm:px-5">
               <div className="flex items-center gap-2"><Terminal className="h-4 w-4 text-accent" /><h2 className="text-sm font-semibold text-text">Your solution</h2></div>
-              <label className="flex items-center gap-2 text-xs font-medium text-muted">
-                Language
-                <select value={language} onChange={(event) => onLanguageChange(event.target.value as CodingLanguage)} className="h-9 min-w-36 rounded-lg border border-border-strong bg-surface px-3 text-xs font-semibold text-text outline-none focus:border-accent">
-                  {data.languages.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-                </select>
-              </label>
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                <label className="flex items-center gap-2 text-xs font-medium text-muted">
+                  Language
+                  <select value={language} onChange={(event) => onLanguageChange(event.target.value as CodingLanguage)} className="h-9 min-w-32 rounded-lg border border-border-strong bg-surface px-3 text-xs font-semibold text-text outline-none focus:border-accent">
+                    {data.languages.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                  </select>
+                </label>
+                <LocalAICoach mode="coding" contextKey={problem.slug} context={codingCoachContext} compact />
+              </div>
             </div>
-            <div className="relative bg-[#0c1018]">
+            <div className="relative overflow-hidden bg-[#0c1018]">
               <div className="flex items-center gap-2 border-b border-white/[0.08] px-4 py-2.5 text-[11px] text-slate-400"><span className="h-2 w-2 rounded-full bg-rose-400" /><span className="h-2 w-2 rounded-full bg-amber-400" /><span className="h-2 w-2 rounded-full bg-emerald-400" /><span className="ml-2 font-mono">solution.{language === "python" ? "py" : language === "javascript" ? "js" : language === "typescript" ? "ts" : language === "java" ? "java" : language === "cpp" ? "cpp" : language === "go" ? "go" : "c"}</span></div>
               <textarea
                 ref={editorRef}
@@ -516,24 +577,9 @@ export function CodingPracticeClient() {
         </section>
       </div>
 
-      <LocalAICoach
-        mode="coding"
-        contextKey={problem.slug}
-        context={[
-          `Challenge: ${problem.title}`,
-          `Difficulty: ${problem.difficulty}`,
-          `Topic: ${problem.topic}`,
-          `Statement: ${problem.statement}`,
-          `Input format: ${problem.inputFormat}`,
-          `Output format: ${problem.outputFormat}`,
-          `Constraints: ${problem.constraints.join("; ")}`,
-          `Examples: ${problem.examples.map((example) => `Input ${example.input} → Output ${example.output}`).join(" | ")}`,
-        ].join("\n")}
-      />
-
       <section className="mt-9" aria-labelledby="problem-bank-heading">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div><p className="text-xs font-semibold uppercase tracking-[0.13em] text-accent">Keep practicing</p><h2 id="problem-bank-heading" className="mt-1 text-xl font-semibold tracking-tight text-text">Problem bank</h2><p className="mt-1 text-sm text-muted">Pick a question. Solving any one today keeps your daily streak moving.</p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.13em] text-accent">Keep practicing</p><h2 id="problem-bank-heading" className="mt-1 text-xl font-semibold tracking-tight text-text">Problem bank</h2><p className="mt-1 text-sm text-muted">Fresh, test-backed variants are added as you scroll.</p></div>
           <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-surface p-1" role="group" aria-label="Filter by difficulty">
             {(["All", "Easy", "Medium", "Hard"] as const).map((item) => <button key={item} type="button" onClick={() => setDifficultyFilter(item)} aria-pressed={difficultyFilter === item} className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${difficultyFilter === item ? "bg-accent-soft text-accent" : "text-muted hover:text-text"}`}>{item}</button>)}
           </div>
@@ -548,6 +594,15 @@ export function CodingPracticeClient() {
               <div className="mt-3 flex items-center justify-between gap-2"><span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${difficultyClass[item.difficulty]}`}>{item.difficulty}</span><span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted group-hover:text-accent">{solved ? "Solved today" : isDaily ? "Today" : "Practice"}<ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" /></span></div>
             </button>;
           })}
+        </div>
+        <div ref={loadMoreRef} className="mt-5 flex min-h-12 items-center justify-center" aria-live="polite">
+          {isLoadingMore ? (
+            <span className="inline-flex items-center gap-2 text-xs text-muted"><LoaderCircle className="h-4 w-4 animate-spin text-accent" /> Preparing the next question set…</span>
+          ) : loadMoreError ? (
+            <button type="button" onClick={() => void loadMoreQuestions()} className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-xs font-semibold text-text hover:bg-surface-hover"><ArrowRight className="h-3.5 w-3.5" /> Try loading more</button>
+          ) : (
+            <button type="button" onClick={() => void loadMoreQuestions()} className="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-xs font-semibold text-muted transition-colors hover:border-accent/40 hover:text-accent"><Sparkles className="h-3.5 w-3.5" /> Generate another set</button>
+          )}
         </div>
       </section>
 

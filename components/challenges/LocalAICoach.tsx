@@ -14,6 +14,7 @@ type Props = {
   mode: CoachMode;
   contextKey: string;
   context: string;
+  compact?: boolean;
 };
 
 function friendlyLoadError(error: unknown) {
@@ -30,7 +31,7 @@ function friendlyLoadError(error: unknown) {
   return "The on-device model could not start. Please try again later.";
 }
 
-export function LocalAICoach({ mode, contextKey, context }: Props) {
+export function LocalAICoach({ mode, contextKey, context, compact = false }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [phase, setPhase] = useState<"idle" | "loading" | "ready" | "answering" | "error">("idle");
   const [progress, setProgress] = useState(0);
@@ -167,28 +168,32 @@ export function LocalAICoach({ mode, contextKey, context }: Props) {
   }
 
   return (
-    <Card className="mt-5 overflow-hidden border-accent/20">
+    <Card className={compact ? "relative z-50 w-fit overflow-visible border-0 bg-transparent shadow-none" : "mt-5 overflow-hidden border-accent/20"}>
       <button
         type="button"
         onClick={() => setExpanded((value) => !value)}
         aria-expanded={expanded}
-        className="flex w-full items-center justify-between gap-4 p-4 text-left transition-colors hover:bg-surface-hover/50 sm:p-5"
+        className={compact
+          ? "inline-flex h-9 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-xs font-semibold text-text transition-colors hover:border-accent/40 hover:bg-surface-hover"
+          : "flex w-full items-center justify-between gap-4 p-4 text-left transition-colors hover:bg-surface-hover/50 sm:p-5"}
       >
-        <span className="flex min-w-0 items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Bot className="h-5 w-5" /></span>
+        <span className={`flex min-w-0 ${compact ? "items-center gap-2" : "items-start gap-3"}`}>
+          <span className={`flex shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent ${compact ? "h-6 w-6" : "h-10 w-10"}`}><Bot className={compact ? "h-3.5 w-3.5" : "h-5 w-5"} /></span>
           <span className="min-w-0">
             <span className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold text-text">TeamForge AI Coach</span>
-              <Badge tone="neutral">Runs on your device</Badge>
+              <span className={compact ? "font-semibold text-text" : "text-sm font-semibold text-text"}>{compact ? "AI Coach" : "TeamForge AI Coach"}</span>
+              <Badge tone="neutral">{compact ? "On-device" : "Runs on your device"}</Badge>
             </span>
-            <span className="mt-1 block text-xs leading-5 text-muted">Ask for a hint, explanation, or a way to think through this challenge.</span>
+            {!compact && <span className="mt-1 block text-xs leading-5 text-muted">Ask for a hint, explanation, or a way to think through this challenge.</span>}
           </span>
         </span>
-        <ChevronDown className={`h-4 w-4 shrink-0 text-muted transition-transform ${expanded ? "rotate-180" : ""}`} />
+        <ChevronDown className={`${compact ? "h-3.5 w-3.5" : "h-4 w-4"} shrink-0 text-muted transition-transform ${expanded ? "rotate-180" : ""}`} />
       </button>
 
       {expanded && (
-        <div className="border-t border-border p-4 sm:p-5">
+        <div className={compact
+          ? "absolute right-0 top-full z-50 mt-2 max-h-[75vh] w-[min(30rem,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-border bg-surface p-4 shadow-2xl sm:p-5"
+          : "border-t border-border p-4 sm:p-5"}>
           <div className="flex items-start gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs leading-5 text-muted">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
             <p><span className="font-semibold text-text">No paid AI API.</span> The model answers in your browser; your questions stay on this device. First use downloads model files once (hundreds of MB) and needs WebGPU. Your internet provider may count that download as data usage.</p>
