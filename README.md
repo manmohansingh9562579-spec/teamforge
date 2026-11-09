@@ -47,6 +47,8 @@ needed to actually ship the project, not just find the team.
 - **Developer connections** — send a private contact request with an optional note, accept or decline incoming requests, and manage your network without exposing email addresses.
 - **Weekly Build Challenge** — a rotating weekly project prompt, public build submissions with GitHub/demo links, and editable entries for signed-in users. No paid email or AI service is required.
 - **Daily Coding Challenge** — a rotating problem bank with Easy/Medium/Hard filters, seven programming languages, hidden test submissions, and MongoDB-backed solving streaks.
+- **TeamForge AI Coach** — optional coding and Logic & Data tutoring with a small Qwen model running in the user's browser through WebGPU. Inference stays on-device and does not use a paid AI API; the browser downloads and caches the model on first use, so WebGPU support and a few hundred MB of initial network data are required.
+- **Logic & Data practice** — original data analysis, maths, and reasoning prompts with browser-saved progress and track filters.
 - **Builder community feed** — public build logs, questions and collaboration calls with secure project links, reactions, comments and comment notifications.
 - **Notifications** — join requests, acceptances, rejections, membership changes, task
   assignments, task status changes.

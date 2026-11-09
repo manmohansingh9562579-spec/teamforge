@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { LocalAICoach } from "@/components/challenges/LocalAICoach";
 import type { LogicDataChallenge, LogicDataDifficulty, LogicDataTrack } from "@/lib/logicDataChallenges";
 
 type TrackFilter = "All" | LogicDataTrack;
@@ -541,6 +542,19 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
           </div>
         </section>
       </div>
+
+      <LocalAICoach
+        mode="logic-data"
+        contextKey={selectedChallenge.id}
+        context={[
+          `Challenge: ${selectedChallenge.title}`,
+          `Track: ${selectedChallenge.track}`,
+          `Difficulty: ${selectedChallenge.difficulty}`,
+          `Prompt: ${selectedChallenge.prompt}`,
+          selectedChallenge.table ? `Data table: ${selectedChallenge.table.headers.join(" | ")}\n${selectedChallenge.table.rows.map((row) => row.join(" | ")).join("\n")}` : "",
+          `Options: ${selectedChallenge.options.map((option) => option.label).join(" | ")}`,
+        ].filter(Boolean).join("\n")}
+      />
     </div>
   );
 }

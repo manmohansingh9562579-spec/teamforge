@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { LocalAICoach } from "@/components/challenges/LocalAICoach";
 import { CODE_TEMPLATES, type CodingDifficulty, type CodingLanguage } from "@/lib/codingLanguages";
 
 type PublicProblem = {
@@ -514,6 +515,21 @@ export function CodingPracticeClient() {
           </Card>
         </section>
       </div>
+
+      <LocalAICoach
+        mode="coding"
+        contextKey={problem.slug}
+        context={[
+          `Challenge: ${problem.title}`,
+          `Difficulty: ${problem.difficulty}`,
+          `Topic: ${problem.topic}`,
+          `Statement: ${problem.statement}`,
+          `Input format: ${problem.inputFormat}`,
+          `Output format: ${problem.outputFormat}`,
+          `Constraints: ${problem.constraints.join("; ")}`,
+          `Examples: ${problem.examples.map((example) => `Input ${example.input} → Output ${example.output}`).join(" | ")}`,
+        ].join("\n")}
+      />
 
       <section className="mt-9" aria-labelledby="problem-bank-heading">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
