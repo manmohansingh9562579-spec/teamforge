@@ -92,6 +92,7 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const generatingRef = useRef(false);
   const autoLoadArmedRef = useRef(true);
+  const lastAutoLoadScrollYRef = useRef(-1);
   const generateMoreQuestionsRef = useRef<(source: "auto" | "manual") => void>(() => undefined);
   const solvedIds = isAuthenticated
     ? [...new Set([...accountSolvedIds, ...browserSolvedIds])]
@@ -231,6 +232,7 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
     if (generatingRef.current) return;
     if (source === "auto" && !autoLoadArmedRef.current) return;
     autoLoadArmedRef.current = false;
+    if (typeof window !== "undefined") lastAutoLoadScrollYRef.current = window.scrollY;
     generatingRef.current = true;
     setIsGeneratingMore(true);
     setGenerationError(false);
@@ -259,14 +261,19 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
   }, [generateMoreQuestions]);
 
   useEffect(() => {
-    const node = loadMoreRef.current;
-    if (!node || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) generateMoreQuestionsRef.current("auto");
-      else autoLoadArmedRef.current = true;
-    }, { rootMargin: "320px 0px" });
-    observer.observe(node);
-    return () => observer.disconnect();
+    function handleScroll() {
+      const scrollY = window.scrollY;
+      const distanceToBottom = document.documentElement.scrollHeight - window.innerHeight - scrollY;
+      if (!autoLoadArmedRef.current) {
+        if (distanceToBottom > 720 && Math.abs(scrollY - lastAutoLoadScrollYRef.current) > 120) {
+          autoLoadArmedRef.current = true;
+        }
+        return;
+      }
+      if (distanceToBottom <= 520) generateMoreQuestionsRef.current("auto");
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   if (!selectedChallenge) {
