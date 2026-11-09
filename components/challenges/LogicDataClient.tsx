@@ -30,8 +30,10 @@ type AccountStats = {
   currentStreak: number;
   bestStreak: number;
 };
+type ChallengeAttempt = { attempts: number; correct: number };
 
 const progressKey = "teamforge-logic-data-solved-v1";
+const attemptKey = "teamforge-logic-data-attempts-v1";
 const tracks: TrackFilter[] = ["All", "Data", "Math", "Logic"];
 const difficulties: DifficultyFilter[] = ["All", "Easy", "Medium", "Hard", "Advanced"];
 
@@ -59,6 +61,7 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
   const [isChecking, setIsChecking] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [browserSolvedIds, setBrowserSolvedIds] = useState<string[]>([]);
+  const [attemptHistory, setAttemptHistory] = useState<Record<string, ChallengeAttempt>>({});
   const [accountSolvedIds, setAccountSolvedIds] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [accountStats, setAccountStats] = useState<AccountStats | null>(null);
@@ -87,6 +90,29 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
   }, [challenges]);
 
   useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(attemptKey);
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          const validEntries = Object.entries(parsed).filter(([id, value]) =>
+            challenges.some((challenge) => challenge.id === id)
+            && value && typeof value === "object"
+            && Number.isSafeInteger((value as ChallengeAttempt).attempts)
+            && (value as ChallengeAttempt).attempts >= 0
+            && Number.isSafeInteger((value as ChallengeAttempt).correct)
+            && (value as ChallengeAttempt).correct >= 0
+            && (value as ChallengeAttempt).correct <= (value as ChallengeAttempt).attempts
+          );
+          setAttemptHistory(Object.fromEntries(validEntries) as Record<string, ChallengeAttempt>);
+        }
+      }
+    } catch {
+      // Recommendations still work from solved prompts if local storage is unavailable.
+    }
+  }, [challenges]);
+
+  useEffect(() => {
     if (!progressLoaded) return;
     try {
       window.localStorage.setItem(progressKey, JSON.stringify(browserSolvedIds));
@@ -94,6 +120,15 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
       // Progress remains available for the current visit if storage is full or blocked.
     }
   }, [browserSolvedIds, progressLoaded]);
+
+  useEffect(() => {
+    if (!progressLoaded) return;
+    try {
+      window.localStorage.setItem(attemptKey, JSON.stringify(attemptHistory));
+    } catch {
+      // The coach remains available for this visit if browser storage is full or blocked.
+    }
+  }, [attemptHistory, progressLoaded]);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,6 +156,40 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
   const selectedChallenge = filteredChallenges.find((challenge) => challenge.id === selectedId)
     ?? filteredChallenges[0]
     ?? challenges[0];
+
+  const practiceCoach = (() => {
+    const trackStats = (tracks.slice(1) as LogicDataTrack[]).map((track) => {
+      const prompts = challenges.filter((challenge) => challenge.track === track);
+      const attempts = prompts.reduce((sum, challenge) => sum + (attemptHistory[challenge.id]?.attempts ?? 0), 0);
+      const correct = prompts.reduce((sum, challenge) => sum + (attemptHistory[challenge.id]?.correct ?? 0), 0);
+      const solved = prompts.filter((challenge) => solvedIds.includes(challenge.id)).length;
+      return { track, prompts, attempts, correct, solved, score: attempts ? correct / attempts : solved / prompts.length };
+    }).filter((item) => item.prompts.length > 0)
+      .sort((a, b) => a.score - b.score || a.solved - b.solved || a.track.localeCompare(b.track));
+    const focus = trackStats[0];
+    if (!focus?.prompts.length) return null;
+
+    const difficultyRank: Record<LogicDataDifficulty, number> = { Easy: 0, Medium: 1, Hard: 2, Advanced: 3 };
+    const recommended = focus.prompts
+      .filter((challenge) => !solvedIds.includes(challenge.id))
+      .sort((a, b) => difficultyRank[a.difficulty] - difficultyRank[b.difficulty])[0]
+      ?? [...focus.prompts].sort((a, b) => {
+        const aAttempts = attemptHistory[a.id]?.attempts ?? 0;
+        const bAttempts = attemptHistory[b.id]?.attempts ?? 0;
+        const aAccuracy = aAttempts ? (attemptHistory[a.id]?.correct ?? 0) / aAttempts : 1;
+        const bAccuracy = bAttempts ? (attemptHistory[b.id]?.correct ?? 0) / bAttempts : 1;
+        return aAccuracy - bAccuracy || aAttempts - bAttempts;
+      })[0];
+    if (!recommended) return null;
+
+    return {
+      track: focus.track,
+      challenge: recommended,
+      reason: focus.attempts
+        ? `${focus.attempts - focus.correct} missed answer${focus.attempts - focus.correct === 1 ? "" : "s"} in ${focus.track} show where another round can help.`
+        : `You’ve solved ${focus.solved} of ${focus.prompts.length} ${focus.track} prompts. A short practice round will build coverage.`,
+    };
+  })();
 
   if (!selectedChallenge) {
     return <div className="container-page py-16 text-sm text-muted">No practice prompts are available right now.</div>;
@@ -185,6 +254,17 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
         setAccountSolvedIds(payload.data.solvedIds);
         setAccountStats(payload.data.stats);
       }
+
+      setAttemptHistory((current) => {
+        const previous = current[checkedChallengeId] ?? { attempts: 0, correct: 0 };
+        return {
+          ...current,
+          [checkedChallengeId]: {
+            attempts: previous.attempts + 1,
+            correct: previous.correct + (payload.data.correct ? 1 : 0),
+          },
+        };
+      });
 
       if (selectedId === checkedChallengeId) {
         setAnswerState(payload.data.correct ? "correct" : "incorrect");
@@ -256,6 +336,36 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
           </Card>
         </div>
       </section>
+
+      {practiceCoach && (
+        <Card className="mt-5 overflow-hidden border-accent/20 bg-gradient-to-r from-accent-soft/55 via-surface to-surface p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Sparkles className="h-4 w-4" /></span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-sm font-semibold text-text">Practice coach</h2>
+                  <Badge tone="neutral">Local coach · no AI API</Badge>
+                </div>
+                <p className="mt-1 text-sm font-medium text-text">Focus next: {practiceCoach.track} · {practiceCoach.challenge.title}</p>
+                <p className="mt-1 text-xs leading-5 text-muted">{practiceCoach.reason} Recommendations run locally from answers saved in this browser; no AI service is called.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setTrackFilter(practiceCoach.track);
+                setDifficultyFilter("All");
+                chooseChallenge(practiceCoach.challenge.id);
+                requestAnimationFrame(() => document.getElementById("active-challenge-title")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+              }}
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover"
+            >
+              Try this prompt <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </Card>
+      )}
 
       <div className="mt-8 grid gap-3 sm:grid-cols-3">
         {([

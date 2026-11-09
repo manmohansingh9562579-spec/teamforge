@@ -170,6 +170,33 @@ export function CodingPracticeClient() {
   const solvedTodaySlugs = useMemo(() => new Set(
     data?.acceptedProgress.filter((entry) => entry.dateKey === data.dateKey).map((entry) => entry.problemSlug) ?? []
   ), [data]);
+  const practiceCoach = useMemo(() => {
+    if (!data?.problems.length) return null;
+
+    const solvedSlugs = new Set(data.acceptedProgress.map((entry) => entry.problemSlug));
+    const difficultyOrder: Record<CodingDifficulty, number> = { Easy: 0, Medium: 1, Hard: 2 };
+    const topicCoverage = [...new Set(data.problems.map((item) => item.topic))]
+      .map((topic) => {
+        const problems = data.problems.filter((item) => item.topic === topic);
+        const solved = problems.filter((item) => solvedSlugs.has(item.slug)).length;
+        const easiest = Math.min(...problems.map((item) => difficultyOrder[item.difficulty]));
+        return { topic, problems, solved, ratio: solved / problems.length, easiest };
+      })
+      .sort((a, b) => a.ratio - b.ratio || a.solved - b.solved || a.easiest - b.easiest || a.topic.localeCompare(b.topic));
+    const leastCovered = topicCoverage[0];
+    const recommended = leastCovered.problems
+      .filter((item) => !solvedSlugs.has(item.slug))
+      .sort((a, b) => difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty] || a.title.localeCompare(b.title))[0]
+      ?? data.problems.find((item) => item.slug === data.dailySlug)
+      ?? data.problems[0];
+
+    return {
+      problem: recommended,
+      reason: data.problems.every((item) => solvedSlugs.has(item.slug))
+        ? "You’ve solved the whole current set. Revisit today’s question to keep your streak warm."
+        : `Your ${leastCovered.topic} set has the most room to grow. Start with a ${recommended.difficulty.toLowerCase()} problem and build from there.`,
+    };
+  }, [data]);
 
   function onCodeChange(value: string) {
     setCode(value);
@@ -316,6 +343,37 @@ export function CodingPracticeClient() {
           </span>
         </Card>
       </section>
+
+      {practiceCoach && (
+        <Card className="mt-5 overflow-hidden border-accent/20 bg-gradient-to-r from-accent-soft/55 via-surface to-surface p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Sparkles className="h-4 w-4" /></span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-sm font-semibold text-text">Practice coach</h2>
+                  <Badge tone="neutral">Local coach · no AI API</Badge>
+                </div>
+                <p className="mt-1 text-sm font-medium text-text">Next up: {practiceCoach.problem.title}</p>
+                <p className="mt-1 text-xs leading-5 text-muted">{practiceCoach.reason} It uses your solve history; recommendation logic runs in your browser without calling an AI service.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setDifficultyFilter("All");
+                setRunResult(null);
+                setRunId("");
+                setRunnerError("");
+                void loadData(practiceCoach.problem.slug);
+              }}
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-accent px-4 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover"
+            >
+              Practice this <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </Card>
+      )}
 
       {!data.isAuthenticated && (
         <div className="mt-5 flex flex-col justify-between gap-3 rounded-xl border border-accent/20 bg-accent-soft/50 p-4 sm:flex-row sm:items-center">
