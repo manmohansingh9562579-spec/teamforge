@@ -91,6 +91,7 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
   const [progressLoaded, setProgressLoaded] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const generatingRef = useRef(false);
+  const autoLoadArmedRef = useRef(true);
   const solvedIds = isAuthenticated
     ? [...new Set([...accountSolvedIds, ...browserSolvedIds])]
     : browserSolvedIds;
@@ -225,8 +226,10 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
     };
   })();
 
-  const generateMoreQuestions = useCallback(() => {
+  const generateMoreQuestions = useCallback((source: "auto" | "manual" = "manual") => {
     if (generatingRef.current) return;
+    if (source === "auto" && !autoLoadArmedRef.current) return;
+    autoLoadArmedRef.current = false;
     generatingRef.current = true;
     setIsGeneratingMore(true);
     setGenerationError(false);
@@ -254,7 +257,8 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
     const node = loadMoreRef.current;
     if (!node || typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) generateMoreQuestions();
+      if (entry.isIntersecting) generateMoreQuestions("auto");
+      else autoLoadArmedRef.current = true;
     }, { rootMargin: "320px 0px" });
     observer.observe(node);
     return () => observer.disconnect();
@@ -528,9 +532,9 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
             {isGeneratingMore ? (
               <span className="inline-flex items-center gap-2 text-xs text-muted"><Sparkles className="h-4 w-4 animate-pulse text-accent" /> Building your next verified question set…</span>
             ) : generationError ? (
-              <button type="button" onClick={generateMoreQuestions} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-text hover:bg-surface-hover">Try generating again</button>
+              <button type="button" onClick={() => generateMoreQuestions()} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-text hover:bg-surface-hover">Try generating again</button>
             ) : (
-              <button type="button" onClick={generateMoreQuestions} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted transition-colors hover:border-accent/40 hover:text-accent"><Sparkles className="h-3.5 w-3.5" /> Generate 12 more</button>
+              <button type="button" onClick={() => generateMoreQuestions()} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted transition-colors hover:border-accent/40 hover:text-accent"><Sparkles className="h-3.5 w-3.5" /> Generate 12 more</button>
             )}
           </div>
         </section>
