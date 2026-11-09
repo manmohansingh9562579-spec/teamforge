@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -32,12 +33,12 @@ export default function GlobalError({
           <Button variant="secondary" onClick={() => reset()}>
             Try again
           </Button>
-          <a
+          <Link
             href="/"
             className="inline-flex h-10 items-center rounded-md bg-accent px-5 text-[14px] font-medium text-on-accent hover:bg-accent-hover"
           >
             Back to home
-          </a>
+          </Link>
         </div>
       </body>
     </html>
