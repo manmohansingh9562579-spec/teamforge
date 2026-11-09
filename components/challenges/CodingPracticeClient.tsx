@@ -361,24 +361,62 @@ export function CodingPracticeClient() {
 
   return (
     <div className="container-page max-w-[1440px] py-8 pb-24 sm:py-10">
-      <header className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-        <div className="max-w-2xl">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="accent"><Code2 className="mr-1.5 h-3.5 w-3.5" /> Daily coding</Badge>
-            <span className="text-xs text-muted">{formatChallengeDate(data.dateKey)} · Resets at 00:00 UTC</span>
+      <header className="coding-hero relative isolate overflow-hidden rounded-[28px] border border-indigo-300/15 bg-[#090d17] shadow-[0_28px_90px_-40px_rgba(72,79,255,.5)]">
+        <div aria-hidden="true" className="coding-hero-grid pointer-events-none absolute inset-0" />
+        <div aria-hidden="true" className="coding-hero-glow pointer-events-none absolute -right-16 -top-32 h-96 w-96 rounded-full" />
+        <div className="relative z-10 grid items-center gap-10 px-6 py-9 sm:px-10 sm:py-12 lg:min-h-[390px] lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,.9fr)] lg:px-12">
+          <div className="coding-hero-copy max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-300/[0.08] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-violet-200"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Daily code lab</span>
+              <span className="text-xs text-slate-400">{formatChallengeDate(data.dateKey)} <span className="text-slate-600">·</span> new challenge at 00:00 UTC</span>
+            </div>
+            <h1 className="mt-5 text-[2.6rem] font-semibold leading-[1.02] tracking-[-0.055em] text-white sm:text-5xl lg:text-[3.65rem]">Think in code.<br /><span className="coding-title-gradient">Level up daily.</span></h1>
+            <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300 sm:text-base">Sharpen your problem-solving instincts, test your ideas, and build a streak one smart move at a time.</p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <a href="#daily-problem" className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 text-sm font-semibold text-white shadow-[0_8px_30px_-10px_rgba(124,92,255,.9)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_35px_-10px_rgba(124,92,255,.9)]">Enter today&apos;s challenge <ArrowRight className="h-4 w-4" /></a>
+              <Link href="/challenges" className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-4 text-sm font-medium text-slate-200 transition-colors hover:border-white/25 hover:bg-white/[0.08]"><Trophy className="h-4 w-4 text-amber-300" /> Weekly build</Link>
+            </div>
+            <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[11px] font-medium text-slate-400">
+              <span className="inline-flex items-center gap-1.5"><Code2 className="h-3.5 w-3.5 text-cyan-300" /> 7 languages</span>
+              <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Hidden test cases</span>
+              <span className="inline-flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-violet-300" /> On-device coach</span>
+            </div>
           </div>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-text sm:text-4xl">Build your problem-solving streak.</h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
-            One fresh coding question every day. Practice across languages, submit against hidden tests, and keep your streak alive.
-          </p>
+
+          <div aria-hidden="true" className="coding-hero-scene relative mx-auto w-full max-w-[430px] py-4 sm:py-6">
+            <div className="coding-hero-entry">
+              <div className="coding-hero-float">
+                <div className="coding-terminal-card overflow-hidden rounded-2xl border border-white/10 bg-[#101522]/95 shadow-[0_30px_80px_-32px_rgba(0,0,0,.9)]">
+                  <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-3">
+                    <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-rose-400" /><span className="h-2.5 w-2.5 rounded-full bg-amber-300" /><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /></div>
+                    <span className="font-mono text-[10px] tracking-wide text-slate-400">TEAMFORGE / DAILY LAB</span>
+                    <span className="rounded-md bg-violet-400/10 px-2 py-1 font-mono text-[9px] text-violet-200">01:24</span>
+                  </div>
+                  <div className="px-5 py-5 sm:px-6 sm:py-6">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-300/80">Today&apos;s mindset</p>
+                    <p className="mt-2 text-lg font-semibold tracking-tight text-white">Break it down. Build it up.</p>
+                    <div className="mt-5 space-y-3 font-mono text-xs sm:text-[13px]">
+                      <div className="flex gap-3"><span className="text-slate-600">01</span><span><span className="text-violet-300">const</span> <span className="text-cyan-200">idea</span> <span className="text-slate-400">=</span> <span className="text-amber-200">thinkClearly()</span></span></div>
+                      <div className="flex gap-3"><span className="text-slate-600">02</span><span><span className="text-violet-300">while</span> <span className="text-slate-300">(testsRemain)</span> <span className="text-slate-400">&#123;</span></span></div>
+                      <div className="flex gap-3"><span className="text-slate-600">03</span><span className="pl-4 text-emerald-300">improveSolution()</span></div>
+                      <div className="flex gap-3"><span className="text-slate-600">04</span><span className="text-slate-400">&#125;</span></div>
+                    </div>
+                    <div className="mt-6 flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.035] px-3.5 py-3">
+                      <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-200"><CheckCircle2 className="h-4 w-4 text-emerald-400" /> Ready when you are</span>
+                      <span className="font-mono text-[10px] text-slate-500">7 langs</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="coding-float-chip absolute -bottom-1 left-0 inline-flex items-center gap-2 rounded-xl border border-emerald-300/20 bg-[#111a20]/95 px-3 py-2.5 text-xs font-semibold text-emerald-100 shadow-xl sm:-left-5"><span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-400/15"><Flame className="h-3.5 w-3.5 text-emerald-300" /></span> Streak starts with one</div>
+            <div className="coding-float-chip-delayed absolute -right-1 top-2 inline-flex items-center gap-2 rounded-xl border border-violet-300/20 bg-[#161522]/95 px-3 py-2.5 text-xs font-semibold text-violet-100 shadow-xl sm:-right-5"><Sparkles className="h-4 w-4 text-violet-300" /> Make it click</div>
+          </div>
         </div>
-        <Link href="/challenges" className="inline-flex h-10 w-fit items-center gap-2 rounded-lg border border-border px-3.5 text-sm font-medium text-text transition-colors hover:bg-surface-hover">
-          <Trophy className="h-4 w-4 text-accent" /> Weekly build challenge <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
       </header>
 
       <section className="mt-7 grid gap-3 sm:grid-cols-3" aria-label="Coding progress">
-        <Card className="flex items-center gap-4 p-4 sm:p-5">
+        <Card className="coding-stat-card flex items-center gap-4 p-4 sm:p-5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500"><Flame className="h-5 w-5" /></div>
           <div><p className="text-xs font-medium text-muted">Current streak</p><p className="mt-0.5 text-2xl font-semibold text-text">{streaks.current} <span className="text-sm font-medium text-muted">days</span></p></div>
           <div className="ml-auto flex gap-1" aria-label="Last seven days">
@@ -389,12 +427,12 @@ export function CodingPracticeClient() {
             })}
           </div>
         </Card>
-        <Card className="flex items-center gap-4 p-4 sm:p-5">
+        <Card className="coding-stat-card flex items-center gap-4 p-4 sm:p-5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><CheckCircle2 className="h-5 w-5" /></div>
           <div><p className="text-xs font-medium text-muted">Problems solved</p><p className="mt-0.5 text-2xl font-semibold text-text">{streaks.solved}</p></div>
           <span className="ml-auto text-xs text-muted">all time</span>
         </Card>
-        <Card className="flex items-center gap-4 p-4 sm:p-5">
+        <Card className="coding-stat-card flex items-center gap-4 p-4 sm:p-5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-500"><Trophy className="h-5 w-5" /></div>
           <div><p className="text-xs font-medium text-muted">Personal best</p><p className="mt-0.5 text-2xl font-semibold text-text">{streaks.best} <span className="text-sm font-medium text-muted">days</span></p></div>
           <span className={`ml-auto inline-flex items-center gap-1 text-xs font-medium ${solvedToday ? "text-emerald-600 dark:text-emerald-400" : "text-muted"}`}>
@@ -440,8 +478,8 @@ export function CodingPracticeClient() {
         </div>
       )}
 
-      <div className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <section aria-labelledby="problem-title" className="min-w-0">
+      <div className="mt-7 grid items-start gap-5 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+        <section id="daily-problem" aria-labelledby="problem-title" className="min-w-0 scroll-mt-24">
           <Card className="overflow-hidden">
             <div className="border-b border-border bg-gradient-to-r from-accent-soft/90 via-surface to-surface px-5 py-5 sm:px-6">
               <div className="flex flex-wrap items-center gap-2">
@@ -613,3 +651,4 @@ export function CodingPracticeClient() {
     </div>
   );
 }
+
