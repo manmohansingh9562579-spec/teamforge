@@ -171,7 +171,14 @@ export function LocalAICoach({ mode, contextKey, context, compact = false }: Pro
     <Card className={compact ? "relative z-50 w-fit overflow-visible border-0 bg-transparent shadow-none" : "mt-5 overflow-hidden border-accent/20"}>
       <button
         type="button"
-        onClick={() => setExpanded((value) => !value)}
+        onClick={() => {
+          if (compact && !expanded) {
+            setExpanded(true);
+            if (phase === "idle" || phase === "error") void loadModel();
+            return;
+          }
+          setExpanded((value) => !value);
+        }}
         aria-expanded={expanded}
         className={compact
           ? "inline-flex h-9 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-xs font-semibold text-text transition-colors hover:border-accent/40 hover:bg-surface-hover"

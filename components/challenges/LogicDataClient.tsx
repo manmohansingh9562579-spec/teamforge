@@ -346,10 +346,9 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-sm font-semibold text-text">Practice coach</h2>
-                  <Badge tone="neutral">Local coach · no AI API</Badge>
                 </div>
                 <p className="mt-1 text-sm font-medium text-text">Focus next: {practiceCoach.track} · {practiceCoach.challenge.title}</p>
-                <p className="mt-1 text-xs leading-5 text-muted">{practiceCoach.reason} Recommendations run locally from answers saved in this browser; no AI service is called.</p>
+                <p className="mt-1 text-xs leading-5 text-muted">{practiceCoach.reason} Recommendations use answers saved in this browser.</p>
               </div>
             </div>
             <button

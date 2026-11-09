@@ -411,10 +411,9 @@ export function CodingPracticeClient() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-sm font-semibold text-text">Practice coach</h2>
-                  <Badge tone="neutral">Local coach · no AI API</Badge>
                 </div>
                 <p className="mt-1 text-sm font-medium text-text">Next up: {practiceCoach.problem.title}</p>
-                <p className="mt-1 text-xs leading-5 text-muted">{practiceCoach.reason} It uses your solve history; recommendation logic runs in your browser without calling an AI service.</p>
+                <p className="mt-1 text-xs leading-5 text-muted">{practiceCoach.reason} Recommendations use your solve history saved in this browser.</p>
               </div>
             </div>
             <button
