@@ -196,7 +196,7 @@ export function LocalAICoach({ mode, contextKey, context, compact = false }: Pro
           : "border-t border-border p-4 sm:p-5"}>
           <div className="flex items-start gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs leading-5 text-muted">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-            <p><span className="font-semibold text-text">No paid AI API.</span> The model answers in your browser; your questions stay on this device. First use downloads model files once (hundreds of MB) and needs WebGPU. Your internet provider may count that download as data usage.</p>
+            <p>The model answers in your browser; your questions stay on this device. First use downloads model files once (hundreds of MB) and needs WebGPU. Your internet provider may count that download as data usage.</p>
           </div>
 
           {phase === "idle" || phase === "error" ? (
