@@ -92,6 +92,7 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const generatingRef = useRef(false);
   const autoLoadArmedRef = useRef(true);
+  const generateMoreQuestionsRef = useRef<(source: "auto" | "manual") => void>(() => undefined);
   const solvedIds = isAuthenticated
     ? [...new Set([...accountSolvedIds, ...browserSolvedIds])]
     : browserSolvedIds;
@@ -254,15 +255,19 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
   }, [allChallenges.length, difficultyFilter, trackFilter]);
 
   useEffect(() => {
+    generateMoreQuestionsRef.current = generateMoreQuestions;
+  }, [generateMoreQuestions]);
+
+  useEffect(() => {
     const node = loadMoreRef.current;
     if (!node || typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) generateMoreQuestions("auto");
+      if (entry.isIntersecting) generateMoreQuestionsRef.current("auto");
       else autoLoadArmedRef.current = true;
     }, { rootMargin: "320px 0px" });
     observer.observe(node);
     return () => observer.disconnect();
-  }, [filteredChallenges.length, generateMoreQuestions]);
+  }, []);
 
   if (!selectedChallenge) {
     return <div className="container-page py-16 text-sm text-muted">No practice prompts are available right now.</div>;
