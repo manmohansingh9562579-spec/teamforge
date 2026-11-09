@@ -182,7 +182,7 @@ export function LocalAICoach({ mode, contextKey, context, compact = false }: Pro
       <button
         type="button"
         onClick={() => {
-          if (compact && !expanded) {
+          if (!expanded) {
             setExpanded(true);
             if (phase === "idle" || phase === "error") void loadModel();
             return;
@@ -270,4 +270,5 @@ export function LocalAICoach({ mode, contextKey, context, compact = false }: Pro
     </Card>
   );
 }
+
 

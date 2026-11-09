@@ -13,6 +13,8 @@ export type LogicDataChallenge = {
   answerId: string;
   hint: string;
   explanation: string;
+  focus?: string;
+  generated?: boolean;
 };
 
 // Original TeamForge practice prompts built around common reasoning concepts.
@@ -162,3 +164,4 @@ export const LOGIC_DATA_CHALLENGES: LogicDataChallenge[] = [
     explanation: "Expected revenue is 0.25 × $400 + 0.75 × $0 = $100. Subtract the $80 cost to get an expected net value of +$20. This is an average across repeated decisions, not a guarantee for one experiment.",
   },
 ];
+

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -19,11 +19,13 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { LocalAICoach } from "@/components/challenges/LocalAICoach";
 import type { LogicDataChallenge, LogicDataDifficulty, LogicDataTrack } from "@/lib/logicDataChallenges";
+import { generateLogicDataQuestions, type GeneratedLogicDataChallenge } from "@/lib/logicDataQuestionGenerator";
 
 type TrackFilter = "All" | LogicDataTrack;
 type DifficultyFilter = "All" | LogicDataDifficulty;
 type AnswerState = "correct" | "incorrect" | null;
 type PublicChallenge = Omit<LogicDataChallenge, "answerId" | "explanation">;
+type ActiveChallenge = PublicChallenge & Partial<Pick<LogicDataChallenge, "answerId" | "explanation">>;
 type AccountStats = {
   solvedCount: number;
   totalAttempts: number;
@@ -35,6 +37,7 @@ type ChallengeAttempt = { attempts: number; correct: number };
 
 const progressKey = "teamforge-logic-data-solved-v1";
 const attemptKey = "teamforge-logic-data-attempts-v1";
+const generatedKey = "teamforge-logic-data-generated-v1";
 const tracks: TrackFilter[] = ["All", "Data", "Math", "Logic"];
 const difficulties: DifficultyFilter[] = ["All", "Easy", "Medium", "Hard", "Advanced"];
 
@@ -44,6 +47,22 @@ const difficultyTone: Record<LogicDataDifficulty, string> = {
   Hard: "border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-400",
   Advanced: "border-violet-500/25 bg-violet-500/10 text-violet-600 dark:text-violet-400",
 };
+
+function isGeneratedChallenge(value: unknown): value is GeneratedLogicDataChallenge {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const item = value as Partial<GeneratedLogicDataChallenge>;
+  return typeof item.id === "string" && item.id.startsWith("logic-generated-")
+    && typeof item.title === "string" && item.title.length <= 140
+    && (item.track === "Data" || item.track === "Math" || item.track === "Logic")
+    && (item.difficulty === "Easy" || item.difficulty === "Medium" || item.difficulty === "Hard" || item.difficulty === "Advanced")
+    && typeof item.prompt === "string" && item.prompt.length <= 2000
+    && Array.isArray(item.options) && item.options.length === 4
+    && item.options.every((option) => option && typeof option.id === "string" && typeof option.label === "string" && option.label.length <= 240)
+    && typeof item.answerId === "string" && item.options.some((option) => option.id === item.answerId)
+    && typeof item.hint === "string" && item.hint.length <= 800
+    && typeof item.explanation === "string" && item.explanation.length <= 1200
+    && typeof item.focus === "string" && item.focus.length <= 80 && item.generated === true;
+}
 
 function TrackIcon({ track, className }: { track: LogicDataTrack; className?: string }) {
   if (track === "Data") return <BarChart3 className={className} />;
@@ -63,41 +82,44 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
   const [showHint, setShowHint] = useState(false);
   const [browserSolvedIds, setBrowserSolvedIds] = useState<string[]>([]);
   const [attemptHistory, setAttemptHistory] = useState<Record<string, ChallengeAttempt>>({});
+  const [generatedChallenges, setGeneratedChallenges] = useState<GeneratedLogicDataChallenge[]>([]);
+  const [isGeneratingMore, setIsGeneratingMore] = useState(false);
+  const [generationError, setGenerationError] = useState(false);
   const [accountSolvedIds, setAccountSolvedIds] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [accountStats, setAccountStats] = useState<AccountStats | null>(null);
   const [progressLoaded, setProgressLoaded] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const generatingRef = useRef(false);
   const solvedIds = isAuthenticated
     ? [...new Set([...accountSolvedIds, ...browserSolvedIds])]
     : browserSolvedIds;
+  const allChallenges = useMemo<ActiveChallenge[]>(() => [...challenges, ...generatedChallenges], [challenges, generatedChallenges]);
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem(progressKey);
-      if (saved) {
-        const parsed: unknown = JSON.parse(saved);
+      const generatedSaved = window.localStorage.getItem(generatedKey);
+      const parsedGenerated: unknown = generatedSaved ? JSON.parse(generatedSaved) : [];
+      const restoredGenerated = Array.isArray(parsedGenerated)
+        ? parsedGenerated.filter(isGeneratedChallenge).slice(-300)
+        : [];
+      setGeneratedChallenges(restoredGenerated);
+      const knownIds = new Set([...challenges.map((challenge) => challenge.id), ...restoredGenerated.map((challenge) => challenge.id)]);
+
+      const savedProgress = window.localStorage.getItem(progressKey);
+      if (savedProgress) {
+        const parsed: unknown = JSON.parse(savedProgress);
         if (Array.isArray(parsed)) {
-          const validIds = parsed.filter((id): id is string =>
-            typeof id === "string" && challenges.some((challenge) => challenge.id === id)
-          );
+          const validIds = parsed.filter((id): id is string => typeof id === "string" && knownIds.has(id));
           setBrowserSolvedIds([...new Set(validIds)]);
         }
       }
-    } catch {
-      // Keep the section usable if browser storage is unavailable.
-    } finally {
-      setProgressLoaded(true);
-    }
-  }, [challenges]);
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(attemptKey);
-      if (saved) {
-        const parsed: unknown = JSON.parse(saved);
+      const savedAttempts = window.localStorage.getItem(attemptKey);
+      if (savedAttempts) {
+        const parsed: unknown = JSON.parse(savedAttempts);
         if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
           const validEntries = Object.entries(parsed).filter(([id, value]) =>
-            challenges.some((challenge) => challenge.id === id)
+            knownIds.has(id)
             && value && typeof value === "object"
             && Number.isSafeInteger((value as ChallengeAttempt).attempts)
             && (value as ChallengeAttempt).attempts >= 0
@@ -109,7 +131,9 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
         }
       }
     } catch {
-      // Recommendations still work from solved prompts if local storage is unavailable.
+      // Keep local practice usable if browser storage is unavailable.
+    } finally {
+      setProgressLoaded(true);
     }
   }, [challenges]);
 
@@ -132,6 +156,15 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
   }, [attemptHistory, progressLoaded]);
 
   useEffect(() => {
+    if (!progressLoaded) return;
+    try {
+      window.localStorage.setItem(generatedKey, JSON.stringify(generatedChallenges.slice(-300)));
+    } catch {
+      // New prompts remain usable for the current session if browser storage is full.
+    }
+  }, [generatedChallenges, progressLoaded]);
+
+  useEffect(() => {
     let cancelled = false;
     fetch("/api/logic-data/progress", { cache: "no-store" })
       .then(async (response) => {
@@ -149,18 +182,18 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
     return () => { cancelled = true; };
   }, []);
 
-  const filteredChallenges = useMemo(() => challenges.filter((challenge) =>
+  const filteredChallenges = useMemo(() => allChallenges.filter((challenge) =>
     (trackFilter === "All" || challenge.track === trackFilter)
       && (difficultyFilter === "All" || challenge.difficulty === difficultyFilter)
-  ), [challenges, difficultyFilter, trackFilter]);
+  ), [allChallenges, difficultyFilter, trackFilter]);
 
   const selectedChallenge = filteredChallenges.find((challenge) => challenge.id === selectedId)
     ?? filteredChallenges[0]
-    ?? challenges[0];
+    ?? allChallenges[0];
 
   const practiceCoach = (() => {
     const trackStats = (tracks.slice(1) as LogicDataTrack[]).map((track) => {
-      const prompts = challenges.filter((challenge) => challenge.track === track);
+      const prompts = allChallenges.filter((challenge) => challenge.track === track);
       const attempts = prompts.reduce((sum, challenge) => sum + (attemptHistory[challenge.id]?.attempts ?? 0), 0);
       const correct = prompts.reduce((sum, challenge) => sum + (attemptHistory[challenge.id]?.correct ?? 0), 0);
       const solved = prompts.filter((challenge) => solvedIds.includes(challenge.id)).length;
@@ -192,6 +225,41 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
     };
   })();
 
+  const generateMoreQuestions = useCallback(() => {
+    if (generatingRef.current) return;
+    generatingRef.current = true;
+    setIsGeneratingMore(true);
+    setGenerationError(false);
+    try {
+      const seedWords = new Uint32Array(1);
+      const seed = typeof window !== "undefined" && window.crypto?.getRandomValues
+        ? window.crypto.getRandomValues(seedWords)[0]
+        : Math.floor(Math.random() * 0xffffffff);
+      const batch = generateLogicDataQuestions({
+        seed,
+        startAt: allChallenges.length,
+        track: trackFilter,
+        difficulty: difficultyFilter,
+      });
+      setGeneratedChallenges((current) => [...current, ...batch]);
+    } catch {
+      setGenerationError(true);
+    } finally {
+      generatingRef.current = false;
+      setIsGeneratingMore(false);
+    }
+  }, [allChallenges.length, difficultyFilter, trackFilter]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) generateMoreQuestions();
+    }, { rootMargin: "320px 0px" });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [filteredChallenges.length, generateMoreQuestions]);
+
   if (!selectedChallenge) {
     return <div className="container-page py-16 text-sm text-muted">No practice prompts are available right now.</div>;
   }
@@ -208,7 +276,7 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
   function chooseTrack(track: TrackFilter) {
     const nextTrack = trackFilter === track ? "All" : track;
     setTrackFilter(nextTrack);
-    const nextChallenge = challenges.find((challenge) =>
+    const nextChallenge = allChallenges.find((challenge) =>
       (nextTrack === "All" || challenge.track === nextTrack)
         && (difficultyFilter === "All" || challenge.difficulty === difficultyFilter)
     );
@@ -222,7 +290,7 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
 
   function chooseDifficulty(difficulty: DifficultyFilter) {
     setDifficultyFilter(difficulty);
-    const nextChallenge = challenges.find((challenge) =>
+    const nextChallenge = allChallenges.find((challenge) =>
       (trackFilter === "All" || challenge.track === trackFilter)
         && (difficulty === "All" || challenge.difficulty === difficulty)
     );
@@ -240,6 +308,18 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
     setIsChecking(true);
     setAnswerError("");
     try {
+      if (selectedChallenge.generated && selectedChallenge.answerId) {
+        const correct = selectedOption === selectedChallenge.answerId;
+        setAttemptHistory((current) => {
+          const previous = current[checkedChallengeId] ?? { attempts: 0, correct: 0 };
+          return { ...current, [checkedChallengeId]: { attempts: previous.attempts + 1, correct: previous.correct + (correct ? 1 : 0) } };
+        });
+        setAnswerState(correct ? "correct" : "incorrect");
+        setAnswerExplanation(correct ? selectedChallenge.explanation ?? "Correct. Review the reasoning and keep going." : "");
+        if (correct) setBrowserSolvedIds((current) => current.includes(checkedChallengeId) ? current : [...current, checkedChallengeId]);
+        return;
+      }
+
       const response = await fetch("/api/logic-data/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -289,7 +369,7 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
   }
 
   const solvedCount = solvedIds.length;
-  const progress = Math.round((solvedCount / challenges.length) * 100);
+  const progress = Math.round((solvedCount / allChallenges.length) * 100);
   const selectedSolved = solvedIds.includes(selectedChallenge.id);
   const browserOnlySolvedCount = browserSolvedIds.filter((id) => !accountSolvedIds.includes(id)).length;
 
@@ -300,24 +380,25 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
         <div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-surface/75 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-accent">
-              <Sparkles className="h-3.5 w-3.5" /> Reason with evidence
+              <Sparkles className="h-3.5 w-3.5" /> Big-tech reasoning lab
             </span>
             <h1 className="mt-5 text-4xl font-semibold tracking-[-0.055em] text-text sm:text-5xl">Logic &amp; Data</h1>
             <p className="mt-3 max-w-[58ch] text-sm leading-7 text-muted sm:text-base">
-              Practice the thinking behind good decisions. Read the data, do the maths, question the assumption, and choose what to do next.
+              Build the thinking behind high-stakes product and AI decisions. Read the data, do the maths, test assumptions, and explain your call.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              <Badge tone="accent">No code required</Badge>
-              <Badge>Original TeamForge prompts</Badge>
-              <Badge>Easy to advanced</Badge>
+              <Badge tone="accent">Product analytics</Badge>
+              <Badge>Experiments &amp; AI metrics</Badge>
+              <Badge>Systems math · Easy to advanced</Badge>
             </div>
+            <p className="mt-3 max-w-[65ch] text-xs leading-5 text-muted">Interview-style practice inspired by broad skills across Microsoft, Google, OpenAI, and NVIDIA roles. Every prompt is an original TeamForge scenario.</p>
           </div>
 
           <Card className="border-white/60 bg-surface/75 p-5 backdrop-blur dark:border-white/10 sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-medium text-muted">Your practice progress</p>
-                <p className="mt-1 text-3xl font-semibold tracking-tight text-text">{solvedCount}<span className="text-base font-medium text-muted"> / {challenges.length}</span></p>
+                <p className="mt-1 text-3xl font-semibold tracking-tight text-text">{solvedCount}<span className="text-base font-medium text-muted"> / {allChallenges.length}</span></p>
               </div>
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-soft text-accent"><Target className="h-5 w-5" /></span>
             </div>
@@ -369,9 +450,9 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
 
       <div className="mt-8 grid gap-3 sm:grid-cols-3">
         {([
-          { name: "Data", count: challenges.filter((challenge) => challenge.track === "Data").length, icon: BarChart3, text: "Read patterns and spot misleading totals" },
-          { name: "Math", count: challenges.filter((challenge) => challenge.track === "Math").length, icon: Calculator, text: "Use probability and expected value" },
-          { name: "Logic", count: challenges.filter((challenge) => challenge.track === "Logic").length, icon: Brain, text: "Trace rules and check assumptions" },
+          { name: "Data", count: allChallenges.filter((challenge) => challenge.track === "Data").length, icon: BarChart3, text: "Read patterns and spot misleading totals" },
+          { name: "Math", count: allChallenges.filter((challenge) => challenge.track === "Math").length, icon: Calculator, text: "Use probability and expected value" },
+          { name: "Logic", count: allChallenges.filter((challenge) => challenge.track === "Logic").length, icon: Brain, text: "Trace rules and check assumptions" },
         ]).map((item) => (
           <button
             key={item.name}
@@ -395,9 +476,10 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
           <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">Choose a prompt</p>
-              <h2 id="challenge-list-title" className="mt-1 text-xl font-semibold tracking-tight text-text">Practice set</h2>
+              <h2 id="challenge-list-title" className="mt-1 text-xl font-semibold tracking-tight text-text">Adaptive question bank</h2>
+              <p className="mt-1 max-w-sm text-xs leading-5 text-muted">New questions are added as you scroll. The on-device AI Coach can help with every prompt.</p>
             </div>
-            <span className="text-xs text-muted">{filteredChallenges.length} available</span>
+            <span className="text-xs text-muted">{filteredChallenges.length} ready</span>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-1.5" aria-label="Filter by track">
@@ -427,10 +509,11 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
                       {isSolved ? <Check className="h-3.5 w-3.5" /> : String(index + 1).padStart(2, "0")}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold leading-5 text-text">{challenge.title}</span>
+                      <span className="flex flex-wrap items-center gap-1.5"><span className="text-sm font-semibold leading-5 text-text">{challenge.title}</span>{challenge.generated && <span className="rounded-full bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-cyan-600 dark:text-cyan-300">Fresh</span>}</span>
                       <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
                         <span className="inline-flex items-center gap-1 text-[11px] text-muted"><TrackIcon track={challenge.track} className="h-3 w-3" />{challenge.track}</span>
                         <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${difficultyTone[challenge.difficulty]}`}>{challenge.difficulty}</span>
+                        {challenge.focus && <span className="text-[10px] text-muted">{challenge.focus}</span>}
                         {isSolved && <span className="text-[10px] font-medium text-success">Solved</span>}
                       </span>
                     </span>
@@ -441,6 +524,15 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
             })}
             {!filteredChallenges.length && <Card className="p-5 text-sm text-muted">No prompts match these filters.</Card>}
           </div>
+          <div ref={loadMoreRef} className="mt-3 flex min-h-12 items-center justify-center" aria-live="polite">
+            {isGeneratingMore ? (
+              <span className="inline-flex items-center gap-2 text-xs text-muted"><Sparkles className="h-4 w-4 animate-pulse text-accent" /> Building your next verified question set…</span>
+            ) : generationError ? (
+              <button type="button" onClick={generateMoreQuestions} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-text hover:bg-surface-hover">Try generating again</button>
+            ) : (
+              <button type="button" onClick={generateMoreQuestions} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted transition-colors hover:border-accent/40 hover:text-accent"><Sparkles className="h-3.5 w-3.5" /> Generate 12 more</button>
+            )}
+          </div>
         </section>
 
         <section aria-labelledby="active-challenge-title" className="min-w-0">
@@ -449,6 +541,7 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
               <div className="flex flex-wrap items-center gap-2">
                 <Badge tone="accent"><TrackIcon track={selectedChallenge.track} className="mr-1.5 h-3 w-3" />{selectedChallenge.track}</Badge>
                 <span className={`rounded-sm border px-2 py-0.5 text-xs font-medium ${difficultyTone[selectedChallenge.difficulty]}`}>{selectedChallenge.difficulty}</span>
+                {selectedChallenge.focus && <span className="rounded-full bg-surface px-2 py-1 text-[10px] font-medium text-muted">{selectedChallenge.focus}</span>}
                 <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted">{selectedChallenge.minutes} min</span>
               </div>
               <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">Reason it out</p>
@@ -535,25 +628,27 @@ export function LogicDataClient({ challenges }: { challenges: PublicChallenge[] 
             </div>
           </Card>
 
+          <LocalAICoach
+            mode="logic-data"
+            contextKey={selectedChallenge.id}
+            context={[
+              `Challenge: ${selectedChallenge.title}`,
+              `Track: ${selectedChallenge.track}`,
+              `Difficulty: ${selectedChallenge.difficulty}`,
+              `Prompt: ${selectedChallenge.prompt}`,
+              selectedChallenge.table ? `Data table: ${selectedChallenge.table.headers.join(" | ")}\n${selectedChallenge.table.rows.map((row) => row.join(" | ")).join("\n")}` : "",
+              `Options: ${selectedChallenge.options.map((option) => option.label).join(" | ")}`,
+            ].filter(Boolean).join("\n")}
+          />
+
           <div className="mt-3 flex items-start gap-2 rounded-xl border border-border bg-surface/70 p-3.5 text-xs leading-5 text-muted">
             <RotateCcw className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            These are original practice prompts, not verified questions from any specific company. Signed-in progress syncs to your account; guest progress stays in this browser.
+            Company-inspired skill practice uses original TeamForge prompts. Generated questions are checked locally; signed-in progress syncs for the official set, while new generated-question progress stays in this browser.
           </div>
         </section>
       </div>
 
-      <LocalAICoach
-        mode="logic-data"
-        contextKey={selectedChallenge.id}
-        context={[
-          `Challenge: ${selectedChallenge.title}`,
-          `Track: ${selectedChallenge.track}`,
-          `Difficulty: ${selectedChallenge.difficulty}`,
-          `Prompt: ${selectedChallenge.prompt}`,
-          selectedChallenge.table ? `Data table: ${selectedChallenge.table.headers.join(" | ")}\n${selectedChallenge.table.rows.map((row) => row.join(" | ")).join("\n")}` : "",
-          `Options: ${selectedChallenge.options.map((option) => option.label).join(" | ")}`,
-        ].filter(Boolean).join("\n")}
-      />
     </div>
   );
 }
+
